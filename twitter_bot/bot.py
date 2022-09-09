@@ -17,6 +17,7 @@ import re
 import snscrape.modules.twitter
 import snscrape.modules.twitter as sntwitter
 
+import emoji
 
 from PIL import Image
 from PIL import ImageFont
@@ -34,9 +35,39 @@ def remove_trash(l):
                 d.append(l[i])
     return (d)
 
+def check_similarity(sentence,base_sentence,num):
+    sentence = sentence.lower().split(" ")
+    base_sentence = base_sentence.lower().split(" ")
+    pourcentage = 0
+    pourcentage_list = []
+
+    for i in range(len(base_sentence)):
+        if base_sentence[i] in sentence:
+            pourcentage = pourcentage + 1
+            pourcentage_list.append(pourcentage)
+        else:
+            pourcentage = 0
+
+    pourcentage_list.sort()
+    if len(pourcentage_list) == 0:
+        print("100")
+        result = 100
+    else:
+        result = (pourcentage_list[-1]/len(sentence)) * 100
+        result = int(result)
+        print(result)
+    if result >= num:
+        return(1)
+    else:
+        return(2)
+
 def random_str(n1,n2):
     x = randint(n1,n2)
     return (x)
+
+def remove_emoji(text):
+    return emoji.replace_emoji(text, replace='')
+    #return emoji.get_emoji_regexp().sub(r'',text)
 
 def random_line(files,n1,n2):
     lines = []
@@ -44,6 +75,14 @@ def random_line(files,n1,n2):
     with open(files) as f:
         lines = f.readlines()
         return(lines[random_str(n1,n2)])
+
+
+def file_line_line(files,x):
+    lines = []
+    rand_line = []
+    with open(files) as f:
+        lines = f.readlines()
+        return(lines[x])
 
 def text_to_pic(word_len):
     lens = 0
@@ -162,11 +201,7 @@ def get_len_word(l):
     return (w)
 
 def blocked_by_user(get_status,copy_tweet):
-    API_KEY = "XXXXXXXX"
-    API_SECRET = "XXXXXXXX"
-    ACCESS_TOKEN = "XXXXXXXX"
-    ACCESS_TOKEN_SECRET = "XXXXXXXX"
-
+    
     since_id = 1
     auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
     auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
@@ -178,13 +213,22 @@ def blocked_by_user(get_status,copy_tweet):
     only_pic = 0
     wait_time = 15
     wait_time2 = 15
+    look_user = ""
+    shadow = True
+
     try:
         get_status = api.get_status(int(copy_tweet))
+        look_user = get_status.user.screen_name
         tweets = []
         limits = 1000
         idx = 0
         never_done = 0
         tweet_split = get_status.text.split("https://")
+        original_tweet = get_status.text
+        image_inside = 0
+        print(tweet_split)
+        if "https://" in original_tweet and len(original_tweet) < 100:
+            image_inside = 1
         #print(get_status.text)
         #print(tweet_split)
         #print(tweet_split)
@@ -226,17 +270,19 @@ def blocked_by_user(get_status,copy_tweet):
 
                 print(rtweets)
                 for i in range(len(rtweets)):
-                    if rtweets[i][0] != "@":
-                        word = word + str(rtweets[i]) + " "
+                    if len(rtweets[i]) > 0:
+                        if rtweets[i][0] != "@":
+                            word = word + str(rtweets[i]) + " "
                 for i in range(len(word)):
                     rword = rword + word[i]
-                query = "(" + rword + ")"
+                rrword = remove_emoji(rword)
+                query = "(" + rrword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ") + ")"
                 ssss = rword
                 print(query)
             else:
                 ass = remove_word(tweet_split[0].split(" "))
                 ssss = ' '.join(ass)
-                query = "(" + ssss + ")"
+                query = "(" + remove_emoji(ssss.replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
         elif len(get_status.text) > 100:
             rtweet = remove_word2(tweet_split)
             rtweets = rtweet[0]
@@ -255,7 +301,7 @@ def blocked_by_user(get_status,copy_tweet):
                     word = word + str(rtweets[i]) + " "
             for i in range(len(word)):
                 rword = rword + word[i]
-            query = "(" + rword + ")"
+            query = "(" + remove_emoji(rword.replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
             ssss = rword
             print(query)
         else:
@@ -272,7 +318,7 @@ def blocked_by_user(get_status,copy_tweet):
             ssss = ' '.join(ass)
             print("ssd")
             print(sssd)
-            query = "(" + ssss + ")"
+            query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
             qquery = "(" + tweet_split[0] + ")"
         #print(tweet_split[0])
         #print("qqqqqq")
@@ -292,13 +338,32 @@ def blocked_by_user(get_status,copy_tweet):
                 else:
                     bss = remove_word2(tweet.content.split(" "))
                     bsss = ' '.join(bss)
-                    if ssss.lower() in bsss.lower() and little_word == 1:
-                        #print(remove_word(tweet.content.split(" ")))
-                        idx = idx + 1
-                        tweets.append(tweet.id)
-                    elif little_word == 0:
-                        idx = idx + 1
-                        tweets.append(tweet.id)
+                    if image_inside == 0:
+                        if ssss.lower() in bsss.lower() and little_word == 1 and check_similarity(ssss,bsss,60) == 1:
+                            #print(remove_word(tweet.content.split(" ")))
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+
+                            #tweet_date.append(tweet.date)
+                        elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+
+                            #tweet_date.append(tweet.date)
+                    else:
+                        dss = remove_word(tweet.content.split(" "))
+                        dsss = ' '.join(dss)
+                        if "https://t.co/" in dsss and check_similarity(ssss,dsss,60) == 1:
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+
+
 
         #print(len(tweets))
         #print(tweets[0])
@@ -306,64 +371,68 @@ def blocked_by_user(get_status,copy_tweet):
         if only_pic == 1:
             return('@' + your_name + " Le tweet contient que des photos ou vidéo je ne peux pas l'analyser",mention_id)
         else:
-            if len(tweets) == 0:
-                never_done = 1
-                url = f"https://twitter.com/user/status/"
-                #tid = tweets[len(tweets)]
+            if shadow == False:
+                if len(tweets) == 0:
+                    never_done = 1
+                    url = f"https://twitter.com/user/status/"
+                    #tid = tweets[len(tweets)]
+                else:
+                    url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                    tid = tweets[len(tweets) - 1]
+                if len(tweet_split) == 1 or too_long == 1:
+                    print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
+                    #print(tid,copy_tweet.in_reply_to_status_id)
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    else:
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+                        time.sleep(wait_time2)
+                elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
+                    #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    else:
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+                        time.sleep(wait_time2)
+                elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet == tid:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
+                        else:
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+                        time.sleep(wait_time2)
+                    else:
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+                        time.sleep(wait_time2)
             else:
-                url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
-                tid = tweets[len(tweets) - 1]
-            if len(tweet_split) == 1 or too_long == 1:
-                print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
-                #print(tid,copy_tweet.in_reply_to_status_id)
-                if idx > 1 and idx <= 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                elif idx > 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                else:
-                    return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
-                    time.sleep(wait_time2)
-            elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
-                #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
-                if idx > 1 and idx <= 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                elif idx > 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                else:
-                    return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
-                    time.sleep(wait_time2)
-            elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
-                if idx > 1 and idx <= 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                elif idx > 999 and never_done == 0:
-                    if copy_tweet == tid:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
-                    else:
-                        return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
-                    time.sleep(wait_time2)
-                else:
-                    return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
-                    time.sleep(wait_time2)
+                return('@' + your_name + " Le tweet a été fait " + str(idx + 1) + " fois mais c'est l'originel",mention_id)
+                time.sleep(wait_time2)
 
     except tweepy.TweepError as e:
         if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
@@ -376,6 +445,15 @@ def blocked_by_user(get_status,copy_tweet):
         print("Désolé je ne peux pas analyser ce tweet.")
         return('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention_id)
         time.sleep(wait_time2)
+
+def file_to_list(filepath):
+    file_lenght = len(print_file(filepath).split("\n"))
+    lst = []
+    tag_idx = 0
+    for i in range(file_lenght - 1):
+        l = file_line_line(filepath,i).replace('\n','')
+        lst.append(l)
+    return (lst)
 
 def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
     print(test)
@@ -397,6 +475,15 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
         mentions = api.mentions_timeline(last_seen_id,tweet_mode='extended')
         #print("F2")
         idx = 0
+        today = dta.today()
+        t_today = int(str(today).replace("-",""))
+        r_today = int(str(print_file("last_date.txt")).replace("-",""))
+        bad_user = 0
+
+        if datetime.datetime.today().weekday() == 1 and t_today != r_today:
+            write_id("last_date.txt",today)
+            write_id("insulte.txt","")
+
         for mention in reversed(mentions):
             #print("F3")
             texts = mention.full_text
@@ -411,6 +498,11 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
             text = text.replace("         "," ")
             text = text.replace("          "," ")
             text = text.split(" ")
+            remove_cherche = mention.full_text.lower().split(" ")
+            launc_cherche = 0
+            for i in range(len(remove_cherche)):
+                if "cherche" == remove_cherche[i]:
+                    launc_cherche = 1
             #tt_text = text
             #del tt_text[0]
             #word_before = word_pos(text,"cherche") - 1
@@ -422,6 +514,29 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 print("bbbbbb")
             time.sleep(1)
             text_with_no_az = remove_word(text)
+            str_text = ' '.join(text_with_no_az)
+            #print("STR TEXT = ", str_text)
+            #print(tt_text)
+            l = len(text)
+            #print("F4")
+
+            insulte = file_to_list("insultes_list.txt")
+            file_lenght = len(print_file("insulte.txt").split("\n"))
+
+            url_list = []
+            tag_list = []
+            tag_idx = 0
+            bad_user = 0
+            for i in range(file_lenght - 1):
+                l = file_line_line("insulte.txt",i).replace('\n','').split(" ")
+                url_list.append(l[1])
+                tag_list.append(l[0])
+
+            for i in range(len(tag_list)):
+                if mention.user.screen_name in tag_list[i]:
+                    tag_idx = i
+                    break
+
             print(text)
             print(mention.full_text.lower())
             print(text_with_no_az)
@@ -429,7 +544,8 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
             l = len(text)
             #print("F4")
 
-            if check_text(text) == len(text) and "@TwittosBot" in text:
+
+            if check_text(text) == len(text) and "@TwittosBot" in text and text[-1].lower() == "@twittosbot" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -440,24 +556,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 api.update_status('@' + your_name + " Tu n'as pas l'air de bien savoir comment je fonctionne regarde mon tweet épinglé et tu comprendras. " + str(nbr),mention.id)
                 print("ok")
                 time.sleep(20)
-            if text[len(text) - 2] == "twdfgheet" and text[len(text) - 1][0]== "@":
-                nbr = int(print_file("nbr.txt"))
-                if nbr > 1:
-                    write_id("nbr.txt","0")
-                nbr = int(print_file("nbr.txt"))
-
-                last_seen_id = mention.id
-                write_id("id.txt",last_seen_id)
-                write_id("your_name.txt",mention.user.screen_name)
-                m = print_file("mention.txt")
-                your_name = print_file("your_name.txt")
-                print("Il faut mettre un T majuscule à Tweet sinon ça ne marche pas")
-                api.update_status('@' + your_name + " Il faut mettre un T majuscule à Tweet sinon ça ne marche pas. " + str(nbr),mention.id)
-                time.sleep(wait_time)
-                nbr = nbr + 1
-                write_id("nbr.txt",str(nbr))
-
-            if "tweet" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "tweet":
+            if "tweet" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "tweet" and bad_user == 0:
                 if len(text) > 2:
                     nbr = int(print_file("nbr.txt"))
                     if nbr > 1:
@@ -552,7 +651,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                         print("Désolé je ne peux pas analyser ce compte")
 
-            elif "coms\n" in mention.full_text or "koms\n" in mention.full_text  or "mot\n" in mention.full_text or "stat\n" in mention.full_text or "mot\n" in mention.full_text:
+            elif "coms\n" in mention.full_text or "koms\n" in mention.full_text  or "mot\n" in mention.full_text or "stat\n" in mention.full_text or "mot\n" in mention.full_text and bad_user == 0:
                 your_name = mention.user.screen_name
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -563,7 +662,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 api.update_status('@' + your_name + " Désolé mais tu t'es trompé il faut tout mettre sur la même ligne. " + str(nbr),mention.id)
                 time.sleep(wait_time)
 
-            elif "koms" in mention.full_text.lower() and "koms\n" not in mention.full_text.lower() and text[len(text) - 2]== "koms":
+            elif "koms" in mention.full_text.lower() and "koms\n" not in mention.full_text.lower() and text[len(text) - 2]== "koms" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -653,7 +752,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     print("Désolé je ne peux pas analyser ce compte")
 
-            elif "like" in mention.full_text.lower() and "like\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "like":
+            elif "like" in mention.full_text.lower() and "like\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "like" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -733,7 +832,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
-            elif "ajd" in mention.full_text.lower() and "ajd\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "ajd":
+            elif "ajd" in mention.full_text.lower() and "ajd\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "ajd" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -775,7 +874,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
-            elif "her" in mention.full_text.lower() and "her\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "her":
+            elif "her" in mention.full_text.lower() and "her\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "her" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -820,7 +919,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
 
-            elif "mot" in mention.full_text.lower() and "mot\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "mot":
+            elif "mot" in mention.full_text.lower() and "mot\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "mot" and bad_user == 0:
                 #username=us
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -872,7 +971,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
-            elif "stat" in mention.full_text.lower() and "stat\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "stat":
+            elif "stat" in mention.full_text.lower() and "stat\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "stat" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -929,7 +1028,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
-            elif "coms" in mention.full_text.lower() and "coms\n" not in mention.full_text.lower() and text[len(text) - 2]== "coms":
+            elif "coms" in mention.full_text.lower() and "coms\n" not in mention.full_text.lower() and text[len(text) - 2]== "coms" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
                     write_id("nbr.txt","0")
@@ -1029,7 +1128,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     print("Désolé je ne peux pas analyser ce compte")
 
-            elif "@twittosbot analyse ce tweet" in mention.full_text.lower() or "@twittosbot  analyse ce tweet" in mention.full_text.lower() or "@twittosbot   analyse ce tweet" in mention.full_text.lower() or "@twittosbot     analyse ce tweet" in mention.full_text.lower():
+            elif "@twittosbot analyse ce tweet" in mention.full_text.lower() or "@twittosbot  analyse ce tweet" in mention.full_text.lower() or "@twittosbot   analyse ce tweet" in mention.full_text.lower() or "@twittosbot     analyse ce tweet" in mention.full_text.lower() and bad_user == 0:
                 print("aaaaanalyse")
                 your_name = mention.user.screen_name
                 write_id("user_name.txt",your_name)
@@ -1039,22 +1138,31 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 status = api.get_status(mention.id)
                 write_id("id.txt",last_seen_id)
                 write_id("get_mention.txt",mention.id)
+                look_user = ""
+                shadow = True
                 try:
                     copy_tweet = api.get_status((mention.id),tweet_mode = "extended")
                     write_id("copy_tweet.txt",copy_tweet.in_reply_to_status_id)
                     get_status = api.get_status(copy_tweet.in_reply_to_status_id)
+                    look_user = get_status.user.screen_name
                     #n_tweet_date = status.created_at
                     write_id("get_status.txt",get_status)
                     tweets = []
                     limits = 1000
                     idx = 0
                     never_done = 0
+                    original_tweet = get_status.text
+                    print("oooooriginl")
+                    print(original_tweet)
+                    image_inside = 0
+                    if "https://" in original_tweet and len(original_tweet) < 100:
+                        image_inside = 1
                     tweet_split = get_status.text.split("https://")
                     #print(get_status.text)
                     #print(tweet_split)
                     #print(tweet_split)
                     #ccprint("cjczoicjoezjcozejcoiejc")
-                    az = tweet_split[0]
+                    az = tweet_split[0].replace("\n"," ")
                     #print("caca")
                     #print(az)
                     #print("caca")
@@ -1062,7 +1170,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     rword = ""
                     qquery = ""
                     query  = ""
-                    max_time = 3000
+                    max_time = 5000
                     sssd = ""
                     ssss = ""
                     little_word = 0
@@ -1096,16 +1204,16 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                                     word = word + str(rtweets[i]) + " "
                             for i in range(len(word)):
                                 rword = rword + word[i]
-                            query = "(" + rword + ")"
+                            query = "(" + remove_emoji(rword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ").replace("j'"," ")) + ")"
                             ssss = rword
                             print(query)
                         else:
                             ass = remove_word(tweet_split[0].split(" "))
                             ssss = ' '.join(ass)
-                            query = "(" + ssss + ")"
+                            query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ").replace("j'"," ")) + ")"
                     elif len(get_status.text) > 100:
                         rtweet = remove_word2(tweet_split)
-                        rtweets = rtweet[0]
+                        rtweets = rtweet[0].replace("\n"," ")
                         rtweets = rtweets.split(" ")
                         too_long = 1
                         print(rtweets)
@@ -1117,11 +1225,12 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
 
                         print(rtweets)
                         for i in range(len(rtweets)):
-                            if rtweets[i][0] != "@":
-                                word = word + str(rtweets[i]) + " "
+                            if len(rtweets[i]) > 0:
+                                if rtweets[i][0] != "@":
+                                    word = word + str(rtweets[i]) + " "
                         for i in range(len(word)):
                             rword = rword + word[i]
-                        query = "(" + rword + ")"
+                        query = "(" + remove_emoji(rword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
                         ssss = rword
                         print(query)
                     else:
@@ -1135,10 +1244,13 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         else:
                             little_word = 1
                         ssss = ' '.join(ass)
+                        ssss = ssss.replace("\n"," ")
                         print("ssd")
                         print(sssd)
-                        query = "(" + ssss + ")"
+                        query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
                         qquery = "(" + tweet_split[0] + ")"
+                        print("qqqqqqqqqqqq")
+                        print(query)
                     #print(tweet_split[0])
                     #print("qqqqqq")
                     #print(qquery)
@@ -1152,20 +1264,37 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     else:
                         for tweet in sntwitter.TwitterSearchScraper(query).get_items():
                             max_time = max_time - 1
+                            #print(tweet.content)
+                            #print(tweet.content)
                             if len(tweets) == limits or max_time < 0:
                                 break
                             else:
                                 bss = remove_word2(tweet.content.split(" "))
                                 bsss = ' '.join(bss)
-                                if ssss.lower() in bsss.lower() and little_word == 1:
-                                    #print(remove_word(tweet.content.split(" ")))
-                                    idx = idx + 1
-                                    tweets.append(tweet.id)
-                                    #tweet_date.append(tweet.date)
-                                elif little_word == 0:
-                                    idx = idx + 1
-                                    tweets.append(tweet.id)
-                                    #tweet_date.append(tweet.date)
+
+                                if image_inside == 0:
+                                    if ssss.lower() in bsss.lower() and little_word == 1 and check_similarity(ssss,bsss,60) == 1:
+                                        #print(remove_word(tweet.content.split(" ")))
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
+
+                                        #tweet_date.append(tweet.date)
+                                    elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
+                                        #tweet_date.append(tweet.date)
+                                else:
+                                    dss = remove_word(tweet.content.split(" "))
+                                    dsss = ' '.join(dss)
+                                    if "https://t.co/" in dsss and check_similarity(ssss,dsss,60) == 1:
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
 
                     #print("original tweet")
                     #print(str(tweet_date[len(tweet_date) - 1]))
@@ -1174,68 +1303,74 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     #print(str(n_tweet_date))
                     #print(len(tweets))
                     #print(tweets[0])
+                    if shadow == True:
+                        print("Shadooooooooooooooo")
                     print("caca")
                     if only_pic == 1:
                         api.update_status('@' + your_name + " Le tweet contient que des photos ou vidéo je ne peux pas l'analyser",mention.id)
                     else:
-                        if len(tweets) == 0:
-                            never_done = 1
-                            url = f"https://twitter.com/user/status/"
-                            #tid = tweets[len(tweets)]
+                        if shadow == False:
+                            if len(tweets) == 0:
+                                never_done = 1
+                                url = f"https://twitter.com/user/status/"
+                                #tid = tweets[len(tweets)]
+                            else:
+                                url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                                tid = tweets[len(tweets) - 1]
+                            if len(tweet_split) == 1 or too_long == 1:
+                                print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
+                                #print(tid,copy_tweet.in_reply_to_status_id)
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
+                                    time.sleep(wait_time2)
+                            elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
+                                #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
+                                    time.sleep(wait_time2)
+                            elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
+                                    time.sleep(wait_time2)
                         else:
-                            url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
-                            tid = tweets[len(tweets) - 1]
-                        if len(tweet_split) == 1 or too_long == 1:
-                            print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
-                            #print(tid,copy_tweet.in_reply_to_status_id)
-                            if idx > 1 and idx <= 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            elif idx > 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            else:
-                                api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
-                                time.sleep(wait_time2)
-                        elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
-                            #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
-                            if idx > 1 and idx <= 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            elif idx > 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            else:
-                                api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
-                                time.sleep(wait_time2)
-                        elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
-                            if idx > 1 and idx <= 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            elif idx > 999 and never_done == 0:
-                                if copy_tweet.in_reply_to_status_id == tid:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention.id)
-                                else:
-                                    api.update_status('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
-                                time.sleep(wait_time2)
-                            else:
-                                api.update_status('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention.id)
-                                time.sleep(wait_time2)
+                            api.update_status('@' + your_name + " Le tweet a été fait " + str(idx + 1) + " fois mais c'est l'originel",mention.id)
+                            time.sleep(wait_time2)
 
                 except tweepy.TweepError as e:
                     if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
@@ -1248,12 +1383,12 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 except IndexError:
                         api.update_status('@' + your_name + " Le tweet contient que des photos ou vidéo ou il est trop long je ne peux pas l'analyser",mention.id)
                         time.sleep(wait_time2)
-                except:
-                    print("Désolé je ne peux pas analyser ce tweet.")
+                except Exception as e:
+                    print(e)
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
 
-            elif "copie" in mention.full_text.lower() and text_with_no_az[0] == "copie":
+            elif "copie" in mention.full_text.lower() and text_with_no_az[0] == "copie" and bad_user == 0:
                 print("coooopy")
                 your_name = mention.user.screen_name
                 idx = 0
@@ -1271,17 +1406,22 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     for i in range(len(word) - 1):
                         rword = rword + word[i]
                     print(rword,len(rword))
+                    rword_len = rword.split(" ")
                     tweets = []
                     limits = 1000
                     idx = 0
-                    query = "(" + rword + ")"
+                    query = "(" + rword.replace(":","").replace('"',"").replace("«","").replace("»","") + ")"
                     for tweet in sntwitter.TwitterSearchScraper(query).get_items():
                         max_time = max_time - 1
                         #print(len(tweets))
+                        #print(tweet.content,rword)
                         if len(tweets) == limits or max_time < 0:
                             break
                         else:
-                            if rword.lower() in tweet.content.lower():
+                            if rword.lower() in tweet.content.lower() and rword_len == 1:
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                            else:
                                 idx = idx + 1
                                 tweets.append(tweet.id)
                     if len(tweets) == 0:
@@ -1308,7 +1448,67 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
 
-            elif "freq" in mention.full_text.lower() and text_with_no_az[0] == "freq":
+            elif "copic" in mention.full_text.lower() and text_with_no_az[0] == "copic" and bad_user == 0:
+                print("coooopy")
+                your_name = mention.user.screen_name
+                idx = 0
+                only_pic = 0
+                last_seen_id = mention.id
+                status = api.get_status(mention.id)
+                write_id("id.txt",last_seen_id)
+                max_time = 5000
+                try:
+                    word = ""
+                    rword = ""
+                    for i in range(l):
+                        if text[i][0] != "@" and text[i] != "copic":
+                            word = word + text[i] + " "
+                    for i in range(len(word) - 1):
+                        rword = rword + word[i]
+                    print(rword,len(rword))
+                    rword_len = rword.split(" ")
+                    tweets = []
+                    limits = 1000
+                    idx = 0
+                    query = "(" + rword.replace(":","").replace('"',"").replace("«","").replace("»","") + ")"
+                    for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+                        max_time = max_time - 1
+                        #print(len(tweets))
+                        #print(tweet.content,rword)
+                        if len(tweets) == limits or max_time < 0:
+                            break
+                        else:
+                            if rword.lower() in tweet.content.lower() and rword_len == 1 and "https://t.co/" in tweet.content.lower():
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                            elif "https://t.co/" in tweet.content.lower():
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                    if len(tweets) == 0:
+                        print("ok")
+                        #url = f"https://twitter.com/user/status/{tweets[len(tweets)]}"
+                        #tid = tweets[len(tweets)]
+                    else:
+                        url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                        tid = tweets[len(tweets) - 1]
+                    if len(rword) > 0:
+                        print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                        #print(tid,copy_tweet.in_reply_to_status_id)
+                        if idx > 1 and idx <= 999:
+                            api.update_status('@' + your_name + " Le tweet a été fait " + str(idx) + " fois voici le tweet originel (le plus ancien) " + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        elif idx > 999:
+                            api.update_status('@' + your_name + " Le tweet a été fait + de 1000 fois voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        else:
+                            api.update_status('@' + your_name + " Le tweet a été fait 0 fois",mention.id)
+                            time.sleep(wait_time2)
+                except:
+                    print("Désolé je ne peux pas analyser ce tweet.")
+                    api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
+                    time.sleep(wait_time2)
+
+            elif "freq" in mention.full_text.lower() and text_with_no_az[0] == "freq" and bad_user == 0:
                 status = api.get_status(mention.id)
                 last_seen_id = mention.id
                 write_id("id.txt",last_seen_id)
@@ -1487,7 +1687,10 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " ,mention.id)
                     print("Désolé je ne peux pas analyser ce mot/phrase réesseaies dans 5 minutes ça marchera peut-être")
 
-            elif "cherche" in mention.full_text.lower() and "recherche" not in mention.full_text.lower():
+            elif launc_cherche == 1 and text[text.index("cherche") - 1][0] == "@" and bad_user == 0:
+                #cherche_split = mention.full_text.lower().split("cherche")
+                #print(cherche_split)
+
                 if len(text) > 3 and check_text(text) >= 2 and check_baz(text) > 0:
                     word = ""
                     rword = ""
@@ -1622,22 +1825,17 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                             time.sleep(wait_time)
                             api.update_status('@' + your_name + " " + "Désolé mais l'utilisateur n'a pas tweeté ce mot sur ses 3000 derniers tweets.",mention.id)
 
-
                 else:
                     print("nothing to sort")
-    except:
-        print("mention pb")
-        time.sleep(120)
+    except Exception as e:
+        print(e)
+        time.sleep(40)
 
 print("start")
+print(remove_emoji("salut a tous les amis "))
 key = 0
 while True:
     print("Waitging!!!",key)
-    API_KEY = "XXXXXXXX"
-    API_SECRET = "XXXXXXXX"
-    ACCESS_TOKEN = "XXXXXXXX"
-    ACCESS_TOKEN_SECRET = "XXXXXXXX"
-    time.sleep(15)
     time.sleep(15)
     try:
         bot_laucnher(0,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET)
@@ -1646,4 +1844,6 @@ while True:
         time.sleep(120)
     time.sleep(5)
     key = key + 1
+    #exit(0)
     #PYTHON
+    #gaymar
