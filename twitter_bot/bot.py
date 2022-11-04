@@ -26,6 +26,66 @@ from PIL import ImageDraw
 from datetime import date as dta
 from datetime import timedelta
 
+
+class var:
+    blocked_tweet = ""
+    tweet_id = ""
+
+
+
+def count_pic(lst):
+    l = []
+    for i in range(len(lst)):
+        if lst[i] != "zxx":
+            l.append(lst[i])
+    
+    return (l)
+   
+def shortstring(s):
+    split_s = s.split(" ")
+    string_s = ' '.join(split_s)
+    while len(string_s) > 120:
+        split_s.pop()
+        string_s = ' '.join(split_s)
+    return(split_s)
+ 
+def get_last_5tweet(user_n):
+    
+    auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
+    auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    account_name = user_n
+    idx = 0
+    lang_lst = []
+    try:
+        tweets = api.user_timeline(screen_name=account_name,count=20,include_rts = True,tweet_mode = 'extended')
+        remove_pic = count_pic(tweets)
+        for i in range(len(tweets)):            
+            status = api.get_status(tweets[i].id)            
+            lang = status.lang
+            lang_lst.append(status.lang)
+        
+        remove_pic = count_pic(lang_lst)
+        #print(remove_pic)
+        if len(remove_pic) == 0:
+            return ("FR")
+        else:
+            if "fr" in lang_lst:
+                return("FR")
+            else:
+                return("EN")
+        
+    except Exception as e:
+        print(e)
+        return ("Twitter error")
+
+def check_link(tweet):
+    link = 0
+    for i in range(len(tweet)):
+        if "https" in tweet[i]:
+            link = 1
+    return (link)
+
 def remove_trash(l):
     d = []
     for i in range(len(l)):
@@ -36,12 +96,13 @@ def remove_trash(l):
     return (d)
 
 def check_similarity(sentence,base_sentence,num):
+    #print("fffffffffffffffffdsfsf")
+
     sentence = sentence.lower().split(" ")
     base_sentence = base_sentence.lower().split(" ")
     pourcentage = 0
     pourcentage_list = []
-
-    for i in range(len(base_sentence)):
+    for i in range(len(base_sentence)):    
         if base_sentence[i] in sentence:
             pourcentage = pourcentage + 1
             pourcentage_list.append(pourcentage)
@@ -50,17 +111,18 @@ def check_similarity(sentence,base_sentence,num):
 
     pourcentage_list.sort()
     if len(pourcentage_list) == 0:
-        print("100")
+        #print("100")
         result = 100
     else:
         result = (pourcentage_list[-1]/len(sentence)) * 100
         result = int(result)
-        print(result)
-    if result >= num:
+        #print(result)
+    
+    if result >= num or len(sentence) > 10:
         return(1)
     else:
         return(2)
-
+ 
 def random_str(n1,n2):
     x = randint(n1,n2)
     return (x)
@@ -200,7 +262,9 @@ def get_len_word(l):
                 w = w + 1
     return (w)
 
-def blocked_by_user(get_status,copy_tweet):
+
+
+def blocked_by_user_en(get_status,copy_tweet,v):
     
     since_id = 1
     auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
@@ -215,7 +279,7 @@ def blocked_by_user(get_status,copy_tweet):
     wait_time2 = 15
     look_user = ""
     shadow = True
-
+                
     try:
         get_status = api.get_status(int(copy_tweet))
         look_user = get_status.user.screen_name
@@ -345,14 +409,14 @@ def blocked_by_user(get_status,copy_tweet):
                             tweets.append(tweet.id)
                             if look_user == look_user:
                                 shadow = False
-
+                            
                             #tweet_date.append(tweet.date)
                         elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
                             idx = idx + 1
                             tweets.append(tweet.id)
                             if look_user == look_user:
                                 shadow = False
-
+                            
                             #tweet_date.append(tweet.date)
                     else:
                         dss = remove_word(tweet.content.split(" "))
@@ -362,14 +426,260 @@ def blocked_by_user(get_status,copy_tweet):
                             tweets.append(tweet.id)
                             if look_user == look_user:
                                 shadow = False
+        #print(len(tweets))
+        #print(tweets[0])
+        print("caca")
+        if only_pic == 1:
+            return('@' + your_name + " The tweet contains only photos or video I cannot analyze it",mention.id)
+        else:
+            if shadow == False:
+                if len(tweets) == 0:
+                    never_done = 1
+                    url = f"https://twitter.com/user/status/"
+                    #tid = tweets[len(tweets)]
+                else:
+                    url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                    tid = tweets[len(tweets) - 1]
+                if len(tweet_split) == 1 or too_long == 1:
+                    print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
+                    #print(tid,copy_tweet.in_reply_to_status_id)
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet has been made " + str(idx) + " times but it's the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet has been made more than 1000 times but it's the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet has been made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    else:
+                        api.update_status('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                        time.sleep(wait_time2)
+                elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
+                    #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times but it's the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    else:
+                        return('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                        time.sleep(wait_time2)
+                elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
+                    if idx > 1 and idx <= 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " but it is the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    elif idx > 999 and never_done == 0:
+                        if copy_tweet.in_reply_to_status_id == tid:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                        else:
+                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                        time.sleep(wait_time2)
+                    else:
+                        return('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                        time.sleep(wait_time2)
+            else:
+                return('@' + your_name + " The tweet has been made " + str(idx + 1) + " times but it is the original",mention.id)
+                time.sleep(wait_time2)
+    except tweepy.TweepError as e:
+        if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
+            time.sleep(wait_time2)
+            return('@' + your_name + " Sorry I can't analyze this tweet the user blocked me. ")
+            
+    except IndexError:
+            time.sleep(wait_time2)
+            return('@' + your_name + " The tweet contains only photos or video or it is too long I cannot analyze it",mention.id)
+    except Exception as e:
+        print(e)
+        time.sleep(wait_time2)
+        return('@' + your_name + " Sorry I can't analyze this tweet. ",mention.id)
+        
 
+
+def blocked_by_user(get_status,copy_tweet,v):
+    
+    since_id = 1
+    auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
+    auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+    your_name = print_file("user_name.txt")
+    mention_id = int(print_file("get_mention.txt"))
+    idx = 0
+    only_pic = 0
+    wait_time = 15
+    wait_time2 = 15
+    look_user = ""
+    shadow = True
+                
+    try:
+        get_status = api.get_status(int(copy_tweet))
+        look_user = get_status.user.screen_name
+        tweets = []
+        limits = 1000
+        idx = 0
+        never_done = 0
+        tweet_split = get_status.text.split("https://")
+        original_tweet = get_status.text
+        image_inside = 0
+        print(tweet_split)
+        if "https://" in original_tweet and len(original_tweet) < 100:
+            image_inside = 1
+        #print(get_status.text)
+        #print(tweet_split)
+        #print(tweet_split)
+        #ccprint("cjczoicjoezjcozejcoiejc")
+        az = tweet_split[0]
+        #print("caca")
+        #print(az)
+        #print("caca")
+        word = ""
+        rword = ""
+        qquery = ""
+        query  = ""
+        max_time = 3000
+        sssd = ""
+        ssss = ""
+        little_word = 0
+        rtweet = ""
+        rtweets = ""
+        azz=""
+        rjoin = ""
+        too_long = 0
+        if az[0] == '@':
+            print("aaazz")
+            print(az)
+            if len(az) > 100:
+                too_long = 1
+                azz = az.split(" ")
+                rtweet = remove_word2(azz)
+                rjoin = ' '.join(rtweet)
+                rtweets = rjoin
+                rtweets = rtweets.split(" ")
+
+                print(rtweets)
+                print("pppppppppppppp")
+                #time.sleep(10000)
+                rtweets.pop()
+                rtweets.pop()
+                rtweets.pop()
+
+                print(rtweets)
+                for i in range(len(rtweets)):
+                    if len(rtweets[i]) > 0:
+                        if rtweets[i][0] != "@":
+                            word = word + str(rtweets[i]) + " "
+                for i in range(len(word)):
+                    rword = rword + word[i]
+                rrword = remove_emoji(rword)
+                query = "(" + rrword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ") + ")"
+                ssss = rword
+                print(query)
+            else:
+                ass = remove_word(tweet_split[0].split(" "))
+                ssss = ' '.join(ass)
+                query = "(" + remove_emoji(ssss.replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
+        elif len(get_status.text) > 100:
+            rtweet = remove_word2(tweet_split)
+            rtweets = rtweet[0]
+            rtweets = rtweets.split(" ")
+            too_long = 1
+            print(rtweets)
+            print("pppppppppppppp")
+            #time.sleep(10000)
+            rtweets.pop()
+            rtweets.pop()
+            rtweets.pop()
+
+            print(rtweets)
+            for i in range(len(rtweets)):
+                if rtweets[i][0] != "@":
+                    word = word + str(rtweets[i]) + " "
+            for i in range(len(word)):
+                rword = rword + word[i]
+            query = "(" + remove_emoji(rword.replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
+            ssss = rword
+            print(query)
+        else:
+            ass = remove_word(tweet_split[0].split(" "))
+            print("asssssssssssssssss")
+            print(ass)
+            print(len(ass))
+            print("asssssssssssssssss")
+
+            if len(ass) > 3:
+                little_word = 0
+            else:
+                little_word = 1
+            ssss = ' '.join(ass)
+            print("ssd")
+            print(sssd)
+            query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
+            qquery = "(" + tweet_split[0] + ")"
+        #print(tweet_split[0])
+        #print("qqqqqq")
+        #print(qquery)
+        #print("qqqqqq")
+        #print(query)
+        #print("qqqqq")
+        #print(query)
+        #print(len(tweets))
+        if len(tweet_split) == 2 and tweet_split[0] == '':
+            only_pic = 1
+        else:
+            for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+                max_time = max_time - 1
+                if len(tweets) == limits or max_time < 0:
+                    break
+                else:
+                    bss = remove_word2(tweet.content.split(" "))
+                    bsss = ' '.join(bss)
+                    if image_inside == 0:
+                        if ssss.lower() in bsss.lower() and little_word == 1 and check_similarity(ssss,bsss,60) == 1:
+                            #print(remove_word(tweet.content.split(" ")))
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+                            
+                            #tweet_date.append(tweet.date)
+                        elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+                            
+                            #tweet_date.append(tweet.date)
+                    else:
+                        dss = remove_word(tweet.content.split(" "))
+                        dsss = ' '.join(dss)
+                        if "https://t.co/" in dsss and check_similarity(ssss,dsss,60) == 1:
+                            idx = idx + 1
+                            tweets.append(tweet.id)
+                            if look_user == look_user:
+                                shadow = False
+                            
 
 
         #print(len(tweets))
         #print(tweets[0])
         print("caca")
         if only_pic == 1:
-            return('@' + your_name + " Le tweet contient que des photos ou vidéo je ne peux pas l'analyser",mention_id)
+            v.tweet_id = mention_id
+            return('@' + your_name + " Le tweet contient que des photos ou vidéo je ne peux pas l'analyser")
         else:
             if shadow == False:
                 if len(tweets) == 0:
@@ -384,66 +694,103 @@ def blocked_by_user(get_status,copy_tweet):
                     #print(tid,copy_tweet.in_reply_to_status_id)
                     if idx > 1 and idx <= 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel",mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet a été fait + de 1000 fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ")
                         time.sleep(wait_time2)
                 elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
                     #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
                     if idx > 1 and idx <= 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ")
                         time.sleep(wait_time2)
                 elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
                     if idx > 1 and idx <= 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel",mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
                         if copy_tweet == tid:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel",mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois mais c'est l'originel")
                         else:
-                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url),mention_id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " Le tweet contient une vidéo ou une photo (le résultat est moins précis) et il a été fait + de 1000 fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ",mention_id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " Le tweet a été fait 0 fois il est donc originel ")
                         time.sleep(wait_time2)
             else:
-                return('@' + your_name + " Le tweet a été fait " + str(idx + 1) + " fois mais c'est l'originel",mention_id)
-                time.sleep(wait_time2)
 
+                v.tweet_id = mention_id
+                return('@' + your_name + " Le tweet a été fait " + str(idx + 1) + " fois mais c'est l'originel")
+                time.sleep(wait_time2)
+                    
     except tweepy.TweepError as e:
         if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
-            return('@' + your_name + " Désolé je ne peux pas analyser ce tweet l'utilisateur m'a bloqué. ",mention_id)
+            
+            v.tweet_id = mention_id
+            return('@' + your_name + " Désolé je ne peux pas analyser ce tweet l'utilisateur m'a bloqué. ")
             time.sleep(wait_time2)
     except IndexError:
-            return('@' + your_name + " Le tweet contient que des photos ou vidéo ou il est trop long je ne peux pas l'analyser",mention_id)
+            
+            v.tweet_id = mention_id
+            return('@' + your_name + " Le tweet contient que des photos ou vidéo ou il est trop long je ne peux pas l'analyser")
             time.sleep(wait_time2)
     except:
+        
+        v.tweet_id = mention_id
         print("Désolé je ne peux pas analyser ce tweet.")
-        return('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention_id)
+        return('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ")
         time.sleep(wait_time2)
 
 def file_to_list(filepath):
@@ -455,7 +802,7 @@ def file_to_list(filepath):
         lst.append(l)
     return (lst)
 
-def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
+def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
     print(test)
 
     #API_KEY = "DP5Gj0TCU1vsqiCHgkvMSRFrA"
@@ -468,8 +815,8 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
     auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     i = 0
-    wait_time = 20
-    wait_time2 = 20
+    wait_time = 16
+    wait_time2 = 16
     last_seen_id = print_file("id.txt")
     try:
         mentions = api.mentions_timeline(last_seen_id,tweet_mode='extended')
@@ -479,15 +826,15 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
         t_today = int(str(today).replace("-",""))
         r_today = int(str(print_file("last_date.txt")).replace("-",""))
         bad_user = 0
-
-        if datetime.datetime.today().weekday() == 1 and t_today != r_today:
+        bot_url = "https://twitter.com/ExplainingMyBot/status/1582160725329707008"
+        if datetime.datetime.today().weekday() == 1 and t_today != r_today:  
             write_id("last_date.txt",today)
             write_id("insulte.txt","")
-
+        
         for mention in reversed(mentions):
             #print("F3")
             texts = mention.full_text
-            text = texts
+            text = texts.replace("\n"," ").strip()
             text = text.replace("  "," ")
             text = text.replace("   "," ")
             text = text.replace("    "," ")
@@ -500,9 +847,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
             text = text.split(" ")
             remove_cherche = mention.full_text.lower().split(" ")
             launc_cherche = 0
+            launc_search = 0
+            
             for i in range(len(remove_cherche)):
                 if "cherche" == remove_cherche[i]:
                     launc_cherche = 1
+                if "search" == remove_cherche[i]:
+                    launc_search = 1
+                
             #tt_text = text
             #del tt_text[0]
             #word_before = word_pos(text,"cherche") - 1
@@ -522,7 +874,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
 
             insulte = file_to_list("insultes_list.txt")
             file_lenght = len(print_file("insulte.txt").split("\n"))
-
+            
             url_list = []
             tag_list = []
             tag_idx = 0
@@ -536,7 +888,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 if mention.user.screen_name in tag_list[i]:
                     tag_idx = i
                     break
-
+            
             print(text)
             print(mention.full_text.lower())
             print(text_with_no_az)
@@ -544,7 +896,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
             l = len(text)
             #print("F4")
 
-
+            
             if check_text(text) == len(text) and "@TwittosBot" in text and text[-1].lower() == "@twittosbot" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -553,7 +905,10 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 your_name = mention.user.screen_name
                 last_seen_id = mention.id
                 write_id("id.txt",last_seen_id)
-                api.update_status('@' + your_name + " Tu n'as pas l'air de bien savoir comment je fonctionne regarde mon tweet épinglé et tu comprendras. " + str(nbr),mention.id)
+                if get_last_5tweet(your_name) == "FR":
+                    api.update_status('@' + your_name + " Tu n'as pas l'air de bien savoir comment je fonctionne regarde mon tweet épinglé et tu comprendras. " + str(nbr),mention.id)
+                else:
+                    api.update_status('@' + your_name + " You don't seem to know how I work go here to undetstand how I work " + str(bot_url),mention.id)
                 print("ok")
                 time.sleep(20)
             if "tweet" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "tweet" and bad_user == 0:
@@ -649,6 +1004,286 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     except:
                         time.sleep(wait_time)
                         api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
+                        print("Désolé je ne peux pas analyser ce compte")
+
+            
+            elif "follower" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "follower" and bad_user == 0:
+                if len(text) > 2:
+                    nbr = int(print_file("nbr.txt"))
+                    if nbr > 1:
+                        write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                    last_seen_id = mention.id
+                    write_id("id.txt",last_seen_id)
+                    write_id("your_name.txt",mention.user.screen_name)
+                    m = print_file("mention.txt")
+                    your_name = print_file("your_name.txt")
+                    m = print_file("mention.txt")
+                    username = str(text[len(text) - 1])
+                    try:
+                        user = api.get_user(username)
+                        ageTwitterAccount = user.created_at
+                        o = ageTwitterAccount
+                        write_id("date.txt",o)
+                        date = print_file("date.txt")
+                        date = date.split(" ")
+                        write_id("date.txt",date[0])
+                        ndate = print_file("date.txt")
+                        year = ndate[0] + ndate[1] + ndate[2] + ndate[3]
+                        month = ndate[5] + ndate[6]
+                        day = ndate[8] + ndate[9]
+                        now = datetime.datetime.now()
+                        today = datetime.date.today()
+                        today_date = now.strftime("%Y-%m-%d")
+                        td = today_date.split("-", 3)
+                        statuses_count = user.followers_count
+                        print(td[0],td[1],td[2])
+                        print(year,month,day)
+                        a = int(td[0]) - int(year)
+                        b = int(td[1]) - int(month)
+                        c = int(td[2]) - int(day)
+                        print(a,b,c)
+                        dday = int(a*365)+int(b*30.4167)+int(c)
+                        res = int(int(statuses_count)/int(dday))
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res3 = int(float(int(statuses_count)/int(dday)) * 30)
+                        res4 = int(float(int(statuses_count)/int(dday)) * 365)
+                        res5 = int(float(int(statuses_count)/int(dday)) * 3650)
+                        m = str(month)
+                        mm = []
+                        month_name = ["January","February","March","April","May","June","July","August","September","October","November","Décember"]
+                        for i in range(1):
+                            if m[0] == "0":
+                                mm.append(m[1])
+                            else:
+                                mm.append(m)
+                        x = int(mm[0])
+                        if statuses_count > 0:
+                            if res >= 1:
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has " + str(statuses_count) + " followers which is approximately " + str(res) + " followers per day. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+                            elif res2 >= 1:
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has " + str(statuses_count) + " followers which is approximately " + str(res2) + " followers per week. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res3 >= 1:
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has " + str(statuses_count) + " followers which is approximately " + str(res3) + " followers per month. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res4 >= 1:
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has " + str(statuses_count) + " followers which is approximately " + str(res4) + " followers per year. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res5 >= 1:
+                                api.update_status('@' + your_name + "The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has " + str(statuses_count) + " followers which is approximately " + str(res5) + " followers per decade. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                        elif statuses_count == 0:
+                            print("Désolé l'utilisateur n'a jamais tweet")
+                            time.sleep(wait_time2)
+                    except:
+                        time.sleep(wait_time)
+                        api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+
+                        print("Désolé je ne peux pas analyser ce compte")
+
+            elif "abo" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "abo" and bad_user == 0:
+                if len(text) > 2:
+                    nbr = int(print_file("nbr.txt"))
+                    if nbr > 1:
+                        write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                    last_seen_id = mention.id
+                    write_id("id.txt",last_seen_id)
+                    write_id("your_name.txt",mention.user.screen_name)
+                    m = print_file("mention.txt")
+                    your_name = print_file("your_name.txt")
+                    m = print_file("mention.txt")
+                    username = str(text[len(text) - 1])
+                    try:
+                        user = api.get_user(username)
+                        ageTwitterAccount = user.created_at
+                        o = ageTwitterAccount
+                        write_id("date.txt",o)
+                        date = print_file("date.txt")
+                        date = date.split(" ")
+                        write_id("date.txt",date[0])
+                        ndate = print_file("date.txt")
+                        year = ndate[0] + ndate[1] + ndate[2] + ndate[3]
+                        month = ndate[5] + ndate[6]
+                        day = ndate[8] + ndate[9]
+                        now = datetime.datetime.now()
+                        today = datetime.date.today()
+                        today_date = now.strftime("%Y-%m-%d")
+                        td = today_date.split("-", 3)
+                        statuses_count = user.followers_count
+                        print(td[0],td[1],td[2])
+                        print(year,month,day)
+                        a = int(td[0]) - int(year)
+                        b = int(td[1]) - int(month)
+                        c = int(td[2]) - int(day)
+                        print(a,b,c)
+                        dday = int(a*365)+int(b*30.4167)+int(c)
+                        res = int(int(statuses_count)/int(dday))
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res3 = int(float(int(statuses_count)/int(dday)) * 30)
+                        res4 = int(float(int(statuses_count)/int(dday)) * 365)
+                        res5 = int(float(int(statuses_count)/int(dday)) * 3650)
+                        m = str(month)
+                        mm = []
+                        wait_time2 = 10
+                        month_name = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Décembre"]
+                        for i in range(1):
+                            if m[0] == "0":
+                                mm.append(m[1])
+                            else:
+                                mm.append(m)
+                        x = int(mm[0])
+                        if statuses_count > 0:
+                            if res >= 1:
+                                api.update_status('@' + your_name + " Le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a " + str(statuses_count) + " abonnés ce qui fait environ " + str(res) + " abonnés par jour. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+                            elif res2 >= 1:
+                                api.update_status('@' + your_name + " Le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a " + str(statuses_count) + " abonnés ce qui fait environ " + str(res2) + " abonnés par semaine. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res3 >= 1:
+                                api.update_status('@' + your_name + " Le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a " + str(statuses_count) + " abonnés ce qui fait environ " + str(res3) + " abonnés par mois. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res4 >= 1:
+                                api.update_status('@' + your_name + " Le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a " + str(statuses_count) + " abonnés ce qui fait environ " + str(res4) + " abonnés par an. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res5 >= 1:
+                                api.update_status('@' + your_name + " Le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a " + str(statuses_count) + " abonnés ce qui fait environ " + str(res5) + " abonnés par décennie. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                        elif statuses_count == 0:
+                            print("Désolé l'utilisateur n'a jamais tweet")
+                            time.sleep(wait_time2)
+                    except:
+                        time.sleep(wait_time)
+                        api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
+                        print("Désolé je ne peux pas analyser ce compte")
+
+
+            elif "tweets" in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2].lower()== "tweets" and bad_user == 0:
+                if len(text) > 2:
+                    nbr = int(print_file("nbr.txt"))
+                    if nbr > 1:
+                        write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                    last_seen_id = mention.id
+                    write_id("id.txt",last_seen_id)
+                    write_id("your_name.txt",mention.user.screen_name)
+                    m = print_file("mention.txt")
+                    your_name = print_file("your_name.txt")
+                    m = print_file("mention.txt")
+                    username = str(text[len(text) - 1])
+                    try:
+                        user = api.get_user(username)
+                        ageTwitterAccount = user.created_at
+                        o = ageTwitterAccount
+                        write_id("date.txt",o)
+                        date = print_file("date.txt")
+                        date = date.split(" ")
+                        write_id("date.txt",date[0])
+                        ndate = print_file("date.txt")
+                        year = ndate[0] + ndate[1] + ndate[2] + ndate[3]
+                        month = ndate[5] + ndate[6]
+                        day = ndate[8] + ndate[9]
+                        now = datetime.datetime.now()
+                        today = datetime.date.today()
+                        today_date = now.strftime("%Y-%m-%d")
+                        td = today_date.split("-", 3)
+                        statuses_count = user.statuses_count
+                        print(td[0],td[1],td[2])
+                        print(year,month,day)
+                        a = int(td[0]) - int(year)
+                        b = int(td[1]) - int(month)
+                        c = int(td[2]) - int(day)
+                        print(a,b,c)
+                        dday = int(a*365)+int(b*30.4167)+int(c)
+                        res = int(int(statuses_count)/int(dday))
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res2 = int(float(int(statuses_count)/int(dday)) * 7)
+                        res3 = int(float(int(statuses_count)/int(dday)) * 30)
+                        res4 = int(float(int(statuses_count)/int(dday)) * 365)
+                        res5 = int(float(int(statuses_count)/int(dday)) * 3650)
+                        m = str(month)
+                        mm = []
+                        month_name = ["January","February","March","April","May","June","July","August","September","October","November","Décember"]
+                        for i in range(1):
+                            if m[0] == "0":
+                                mm.append(m[1])
+                            else:
+                                mm.append(m)
+                        x = int(mm[0])
+                        if statuses_count > 0:
+                            if res >= 1:
+                                print("Le compte le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a tweeté " + str(statuses_count) + " fois ce qui fait environ " + str(res) + " tweets par jour." )
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has tweeted " + str(statuses_count) + " times which is approximately " + str(res) + " tweets per day. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+                            elif res2 >= 1:
+                                print("Le compte le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a tweeté " + str(statuses_count) + " fois ce qui fait environ " + str(res2) + " tweets par semaine.")
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has tweeted " + str(statuses_count) + " times which is approximately " + str(res2) + " tweets per week. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res3 >= 1:
+                                print("Le compte le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a tweeté " + str(statuses_count) + " fois ce qui fait environ " + str(res3) + " tweets par mois")
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has tweeted " + str(statuses_count) + " times which is approximately " + str(res3) + " tweets per month. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res4 >= 1:
+                                print("Le compte le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a tweeté " + str(statuses_count) + " fois ce qui fait environ " + str(res4) + " tweets par an")
+                                api.update_status('@' + your_name + " The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has tweeted " + str(statuses_count) + " times which is approximately " + str(res4) + " tweets per year. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                            elif res5 >= 1:
+                                print("Le compte le compte a été créé le " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " et a tweeté " + str(statuses_count) + " fois ce qui fait environ " + str(res5) + " tweets par décennie")
+                                api.update_status('@' + your_name + "The account was made the " + str(day) + " " + str(month_name[x - 1]) + " " + str(year) + " and has tweeted " + str(statuses_count) + " times which is approximately " + str(res5) + " tweets per decade. " + str(nbr),mention.id)
+                                time.sleep(wait_time2)
+                                nbr = nbr + 1
+                                write_id("nbr.txt",str(nbr))
+
+                        elif statuses_count == 0:
+                            print("Désolé l'utilisateur n'a jamais tweet")
+                            time.sleep(wait_time2)
+                    except:
+                        time.sleep(wait_time)
+                        api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+
                         print("Désolé je ne peux pas analyser ce compte")
 
             elif "coms\n" in mention.full_text or "koms\n" in mention.full_text  or "mot\n" in mention.full_text or "stat\n" in mention.full_text or "mot\n" in mention.full_text and bad_user == 0:
@@ -751,7 +1386,99 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     time.sleep(10)
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     print("Désolé je ne peux pas analyser ce compte")
+            
+            elif "komment" in mention.full_text.lower() and "komment\n" not in mention.full_text.lower() and text[len(text) - 2]== "komment" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                ##username = str(text[len(text) - 1])
+                username = str(text[len(text) - 3])
+                uuu = str(text[len(text) - 1])
+                uuu = uuu.replace("@","")
+                uuu = "#" + uuu
+                uuu = uuu.lower()
+                your_name = mention.user.screen_name
+                res = 0
+                res2 = 0
+                c = 0
+                s = 0
+                acc_to_find = 0
+                print(username,uuu)
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+                    tag = []
+                    tag_name = []
+                    tag_nbr = []
+                    tag_all_nbr = []
+                    tag_n = []
+                    reply_nbr = 0
+                    found = 0
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a = all_tweets[i].full_text
+                        b = all_tweets[i].full_text.split(" ")
+                        if a [0] == "@":
+                            reply_nbr = reply_nbr + 1
+                            tag.append(b[0].lower())
+                    for i in range(len(tag)):
+                        dx = tag.count(tag[i])
+                        if tag[i] not in tag_name:
+                            tag_n.append(tag[i].lower().replace("@","#") )
+                            tag_nbr.append(dx)
+                            tag_all_nbr.append(dx)
+                            tag_name.append(tag[i].lower())
+                        tag_name.append(tag[i])
+                    if len(tag_all_nbr) > 0:
+                        tag_all_nbr.sort()
+                        X = tag_n
+                        Y = tag_nbr
+                        Z = [x for _,x in sorted(zip(Y,X))]
+                        final = []
+                        for i in range(len(Z)):
+                            lenz = len(Z) - 1
+                            lenn = len(tag_all_nbr) - 1
+                            res = float((tag_all_nbr[lenn-i]/reply_nbr) * 100)
+                            res = round(res,1)
+                            final.append(Z[lenz-i]+ " " + str(tag_all_nbr[lenn-i]) +" times " + "≈ " + str(res) + "%")
+                        ld = len(final)
+                        for i in range(len(final)):
+                            t_final = final[i].split(" ")
+                            if t_final[0] == uuu:
+                                print(final[i],t_final)
+                                acc_to_find = i
+                                found = 1
+                                break
+                        if found == 1:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" + final[acc_to_find]+ "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+                        else:
+                            print("nothing was found")
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account has never commented or replied to " + uuu + " " + str(nbr),mention.id)
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+                except Exception as e:
+                    print(e)
+                    time.sleep(10)
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
 
+                    print("Désolé je ne peux pas analyser ce compte")
+            
             elif "like" in mention.full_text.lower() and "like\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "like" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -828,10 +1555,103 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("D'après ses " + str(len(w)) + " derniers tweets\commentaires le compte a : \n" + str(ll) + " tweets et commentaires = " + str(res) + " likes ≈ " + str(res_t) + " likes par commentaires et tweets.\n" + str(ll3) + " tweets = " + str(res3) + " likes ≈ " + str(res_r) + " likes par tweets.\n" + str(ll2) + " commentaires = " + str(res2) + " likes ≈ " + str(res_l) + " likes par commentaires.\n")
                     api.update_status('@' + your_name + " D'après ses " + str(len(w)) + " derniers tweets\commentaires le compte a : \n" + str(ll) + " tweets et commentaires = " + str(res) + " likes ≈ " + str(res_t) + " likes par commentaires et tweets.\n" + str(ll3) + " tweets = " + str(res3) + " likes ≈ " + str(res_r) + " likes par tweets.\n" + str(ll2) + " commentaires = " + str(res2) + " likes ≈ " + str(res_l) + " likes par commentaires.\n" + str(nbr),mention.id)
                     time.sleep(wait_time)
+                
+                except tweepy.TweepError as e:
+                    if str(e) == "[{'code': 186, 'message': 'Tweet needs to be a bit shorter.'}]":
+                        api.update_status('@' + your_name + " D'après ses " + str(len(w)) + " derniers twets\coms le compte a : \n" + str(ll) + " twets et coms = " + str(res) + " likes ≈ " + str(res_t) + " likes par coms et twets.\n" + str(ll3) + " twets = " + str(res3) + " likes ≈ " + str(res_r) + " likes par twets.\n" + str(ll2) + " coms = " + str(res2) + " likes ≈ " + str(res_l) + " likes par coms.\n" + str(nbr),mention.id)   
                 except:
+                    print(e)
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
+            
+            elif "likes" in mention.full_text.lower() and "likes\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "likes" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                username = str(text[len(text) - 1]).replace("@","")
+                your_name = mention.user.screen_name
+                tweet_nbr = 0
+                com_nbr = 0
+                rt_nbr = 0
+                tweet_res = 0
+                com_res = 0
+                rt_res = 0
+                w = []
+                x = []
+                y = []
+
+                d = 0
+                res = 0
+                res2 = 0
+                res3 = 0
+                ll = 0
+                ll2 = 0
+                ll3 = 0
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a=all_tweets[i].full_text
+                        ll = ll + 1
+                        w.append(all_tweets[i].favorite_count)
+                        if a[0] == "@":
+                            x.append(all_tweets[i].favorite_count)
+                            ll2 = ll2 + 1
+
+                        else:
+                            y.append(all_tweets[i].favorite_count)
+                            ll3 = ll3 + 1
+
+                    w.sort()
+                    x.sort()
+                    y.sort()
+
+                    for i in range(len(w)):
+                        res = res + w[i]
+                    for i in range(len(x)):
+                        res2 = res2 + x[i]
+                    for i in range(len(y)):
+                        res3 = res3 + y[i]
+
+                    #res = round(res,0)
+                    res_t = int(res/len(w))
+                    if len(x) == 0:
+                        res_l = 0
+                    else:
+                        res_l = int(res2/len(x))
+                    if len(y) == 0:
+                        res_r = 0
+                    else:
+                        res_r = int(res3/len(y))
+                    print(res_t,res,res_l,res2,res_r,res3)
+                    print("According to his " + str(len(w)) + " last tweets\comments the account has : \n" + str(ll) + " tweets and comments = " + str(res) + " likes ≈ " + str(res_t) + " likes per comments and tweets.\n" + str(ll3) + " tweets = " + str(res3) + " likes ≈ " + str(res_r) + " likes per tweets.\n" + str(ll2) + " comments = " + str(res2) + " likes ≈ " + str(res_l) + " likes per commentaires.\n")
+                    api.update_status('@' + your_name + " According to his " + str(len(w)) + " last tweets\comments the account has : \n" + str(ll) + " tweets and comments = " + str(res) + " likes ≈ " + str(res_t) + " likes per comments and tweets.\n" + str(ll3) + " tweets = " + str(res3) + " likes ≈ " + str(res_r) + " likes per tweets.\n" + str(ll2) + " comments = " + str(res2) + " likes ≈ " + str(res_l) + " likes per comments.\n" + str(nbr),mention.id)
+                    time.sleep(wait_time)
+                except tweepy.TweepError as e:
+                    if str(e) == "[{'code': 186, 'message': 'Tweet needs to be a bit shorter.'}]":
+                        api.update_status('@' + your_name + " According to his " + str(len(w)) + " last twets\coms the account has : \n" + str(ll) + " twets and coms = " + str(res) + " likes ≈ " + str(res_t) + " likes per coms and twets.\n" + str(ll3) + " twets = " + str(res3) + " likes ≈ " + str(res_r) + " likes per twets.\n" + str(ll2) + " coms = " + str(res2) + " likes ≈ " + str(res_l) + " likes per coms.\n" + str(nbr),mention.id)
+                except:
+                    print(e)
+                    print("Désolé je ne peux pas analyser ce compte.")
+                    #api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+
+                    time.sleep(wait_time)
+            
             elif "ajd" in mention.full_text.lower() and "ajd\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "ajd" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -860,7 +1680,8 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         all_tweets.extend(tweets)
                     for i in range(len(all_tweets)):
                         a=all_tweets[i].full_text
-                        date  = all_tweets[i].created_at + timedelta(hours=2)
+                        print(all_tweets[0].created_at + timedelta(hours=1))
+                        date  = all_tweets[i].created_at + timedelta(hours=1)
                         ddd = str(date)
                         if today_date in ddd:
                             td = td + 1
@@ -874,6 +1695,8 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
+            
+            
             elif "her" in mention.full_text.lower() and "her\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "her" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -905,7 +1728,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         all_tweets.extend(tweets)
                     for i in range(len(all_tweets)):
                         a=all_tweets[i].full_text
-                        date  = all_tweets[i].created_at + timedelta(hours=2)
+                        date  = all_tweets[i].created_at + timedelta(hours=1)
                         ddd = str(date)
                         if today_date in ddd:
                             td = td + 1
@@ -918,6 +1741,95 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 except:
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
+
+            elif "today" in mention.full_text.lower() and "today\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "today" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                username = str(text[len(text) - 1]).replace("@","")
+                your_name = mention.user.screen_name
+                td = 0
+                now = datetime.datetime.now()
+                today = datetime.date.today()
+                today_date = now.strftime("%Y-%m-%d")
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = True,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+                    w = 0
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = True,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a=all_tweets[i].full_text
+                        date  = all_tweets[i].created_at + timedelta(hours=1)
+                        ddd = str(date)
+                        if today_date in ddd:
+                            td = td + 1
+                            #print(a,date,td,w)
+                    print("L'utilisateur a tweeté " + str(td) + " fois aujourd'hui.")
+                    api.update_status('@' + your_name + " The user has tweeted " + str(td) + " times today." + str(nbr),mention.id)
+                    nbr = nbr + 1
+                    write_id("nbr.txt",str(nbr))
+                    time.sleep(wait_time)
+                except:
+                    print("Désolé je ne peux pas analyser ce compte.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+                    time.sleep(wait_time)
+            
+            elif "yesterday" in mention.full_text.lower() and "yesterday\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "yesterday" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                username = str(text[len(text) - 1]).replace("@","")
+                your_name = mention.user.screen_name
+                td = 0
+                today = datetime.date.today()
+
+                yesterday = today - datetime.timedelta(days=1)
+                today_date = yesterday.strftime("%Y-%m-%d")
+
+                zz = 0
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+                    w = 0
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a=all_tweets[i].full_text
+                        date  = all_tweets[i].created_at + timedelta(hours=1)
+                        ddd = str(date)
+                        if today_date in ddd:
+                            td = td + 1
+                            #print(a,date,td,w)
+                    print("L'utilisateur a tweeté " + str(td) + " fois hier.")
+                    api.update_status('@' + your_name + " The user has tweeted " + str(td) + " times yesterday." + str(nbr),mention.id)
+                    nbr = nbr + 1
+                    write_id("nbr.txt",str(nbr))
+                    time.sleep(wait_time)
+                except:
+                    print("Désolé je ne peux pas analyser ce compte.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+                    #api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
 
             elif "mot" in mention.full_text.lower() and "mot\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "mot" and bad_user == 0:
                 #username=us
@@ -970,6 +1882,58 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 except:
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
+                    time.sleep(wait_time)
+            elif "word" in mention.full_text.lower() and "word\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "word" and bad_user == 0:
+                #username=us
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                username = str(text[len(text) - 1]).replace("@","")
+                your_name = mention.user.screen_name
+                res = 0
+                res2 = 0
+                nbr_car = 0
+                twt_nbr = 0
+                nbr_word = 0
+                a=0
+                dddd=0
+                #if dddd==0:
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        #a=len()
+                        td = all_tweets[i].full_text.lower().split(" ")
+                        tr = remove_word2(td)
+                        len_l = get_len_list(tr)
+                        len_word = get_len_word(td)
+                        #print(tr,len_l,len_word)
+                        nbr_car = nbr_car + len_l
+                        nbr_word = nbr_word + len(all_tweets[i].full_text.split(" ")) - len_word
+                    twt_nbr = len(all_tweets)
+                    res = int(nbr_word/len(all_tweets))
+                    res2 = int(nbr_car/len(all_tweets))
+                    myn = (res2/280)*100
+                    print(str(nbr_car) + " " + str(res2) + " " + str(myn) + " " + str(nbr_word) + " " + str(res))
+                    print("D'après ses " + str(twt_nbr) + " derniers tweets le compte a écrit " + str(nbr_word) + " mots et " + str(nbr_car) + " caractères ce qui fait une moyenne de " + str(res) + " mots et " + str(res2) + " caractères par tweet.")
+                    api.update_status('@' + your_name + " According to his " + str(twt_nbr) + " latest tweets the account wrote about " + str(nbr_word) + " words and " + str(nbr_car) + " characters which makes an average of " + str(res) + " words and " + str(res2) + " characters per tweet. " + str(nbr),mention.id)
+                    time.sleep(wait_time)
+                except:
+                    print("Désolé je ne peux pas analyser ce compte.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
                     time.sleep(wait_time)
             elif "stat" in mention.full_text.lower() and "stat\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "stat" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
@@ -1028,6 +1992,65 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce compte.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     time.sleep(wait_time)
+            
+            elif "stats" in mention.full_text.lower() and "stats\n" not in mention.full_text.lower() and text[len(text) - 1][0] == "@" and text[len(text) - 2]== "stats" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                    nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                #username = us
+                username = str(text[len(text) - 1]).replace("@","")
+                your_name = mention.user.screen_name
+                tweet_nbr = 0
+                com_nbr = 0
+                rt_nbr = 0
+                tweet_res = 0
+                com_res = 0
+                rt_res = 0
+
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = True,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = True,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a=all_tweets[i].full_text
+                        #print(a)
+                        if a[0] == "@":
+                            com_nbr = com_nbr + 1
+                        elif a[0] == "R" and a[1] == "T":
+                            rt_nbr = rt_nbr + 1
+                        else:
+                            tweet_nbr = tweet_nbr + 1
+                    len_t = len(all_tweets)
+                    tweet_res = (tweet_nbr/len_t)*100
+                    com_res = (com_nbr/len_t)*100
+                    rt_res = (rt_nbr/len_t)*100
+                    tweet_res = round(tweet_res,2)
+                    com_res = round(com_res,2)
+                    rt_res = round(rt_res,2)
+                    print(com_nbr,rt_nbr,tweet_nbr,tweet_res,com_res,rt_res,com_nbr+rt_nbr+tweet_nbr,len_t)
+                    print("Nombre de tweet: " + str(tweet_nbr) + " Nombre de rt: " + str(rt_nbr) + " Nombre de commentaires: " + str(com_nbr) + " %" + " de tweet: " + str(tweet_res)  + " %" + " de rt: " + str(rt_res)  + " %" + " de coms: " + str(com_res) + " total " + str(len_t))
+                    print("D'après ses " + str(len_t) + " dernier Tweets\Rt\Commentaires le compte a:\n"+str(tweet_nbr) + " Tweets\n"+str(com_nbr) + " Commentaires\n"+str(rt_nbr) + " Rt\n" + "Le compte a " + str(tweet_res) + " %" + " de Tweets " + str(com_res) + " %" + " de commentaire et " + str(rt_res) + " %" + " de rt.")
+                    #print(str(nbr_car) + " " + str(res2) + " " + str(myn) + " " + str(nbr_word) + " " + str(res))
+                    #print("D'après ses " + str(twt_nbr) + " derniers tweets le compte a écrit " + str(nbr_word) + " mots et " + str(nbr_car) + " caractères ce qui fait une moyenne de " + str(res) + " mots et " + str(res2) + " caractères par tweet.")
+                    api.update_status('@' + your_name + " According to his " + str(len_t) + " last Tweets\Rt\Comments the account has:\n"+str(tweet_nbr) + " Tweets\n"+str(com_nbr) + " Comments\n"+str(rt_nbr) + " Rt\n" + "which is approximately " + str(tweet_res) + "%" + " of Tweet, " + str(com_res) + "%" + " of Comment and " + str(rt_res) + "%" + " of Rt.\n" + str(nbr),mention.id)
+                    time.sleep(wait_time)
+                except:
+                    print("Désolé je ne peux pas analyser ce compte.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+                    time.sleep(wait_time)
+            
             elif "coms" in mention.full_text.lower() and "coms\n" not in mention.full_text.lower() and text[len(text) - 2]== "coms" and bad_user == 0:
                 nbr = int(print_file("nbr.txt"))
                 if nbr > 1:
@@ -1128,7 +2151,107 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce compte. " + str(nbr),mention.id)
                     print("Désolé je ne peux pas analyser ce compte")
 
-            elif "@twittosbot analyse ce tweet" in mention.full_text.lower() or "@twittosbot  analyse ce tweet" in mention.full_text.lower() or "@twittosbot   analyse ce tweet" in mention.full_text.lower() or "@twittosbot     analyse ce tweet" in mention.full_text.lower() and bad_user == 0:
+            elif "comment" in mention.full_text.lower() and "comment\n" not in mention.full_text.lower() and text[len(text) - 2]== "comment" and bad_user == 0:
+                nbr = int(print_file("nbr.txt"))
+                if nbr > 1:
+                    write_id("nbr.txt","0")
+                nbr = int(print_file("nbr.txt"))
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                username = str(text[len(text) - 1])
+                your_name = mention.user.screen_name
+                res = 0
+                res2 = 0
+                c = 0
+                s = 0
+                try:
+                    tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,tweet_mode = 'extended')
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    oldest_id = tweets[-1].id
+                    tag = []
+                    tag_name = []
+                    tag_nbr = []
+                    tag_all_nbr = []
+                    tag_n = []
+                    reply_nbr = 0
+                    while True:
+                        tweets = api.user_timeline(screen_name=username,count=200,include_rts = False,max_id = oldest_id - 1,tweet_mode = 'extended')
+                        if len(tweets) == 0:
+                            break
+                        oldest_id = tweets[-1].id
+                        o_id = tweets[len(tweets) - 1].id
+                        all_tweets.extend(tweets)
+                    for i in range(len(all_tweets)):
+                        a = all_tweets[i].full_text
+                        b = all_tweets[i].full_text.split(" ")
+                        if a [0] == "@":
+                            reply_nbr = reply_nbr + 1
+                            tag.append(b[0])
+                    for i in range(len(tag)):
+                        dx = tag.count(tag[i])
+                        if tag[i] not in tag_name:
+                            tag_n.append(tag[i].replace("@","#") )
+                            tag_nbr.append(dx)
+                            tag_all_nbr.append(dx)
+                            tag_name.append(tag[i])
+                        tag_name.append(tag[i])
+                    if len(tag_all_nbr) > 0:
+                        tag_all_nbr.sort()
+                        X = tag_n
+                        Y = tag_nbr
+                        Z = [x for _,x in sorted(zip(Y,X))]
+                        final = []
+                        for i in range(len(Z)):
+                            lenz = len(Z) - 1
+                            lenn = len(tag_all_nbr) - 1
+                            if i < 5:
+                                res = float((tag_all_nbr[lenn-i]/reply_nbr) * 100)
+                                res = round(res,1)
+                                final.append(Z[lenz-i]+ " " + str(tag_all_nbr[lenn-i]) +" times " + "≈ " + str(res) + "%")
+                        ld = len(final)
+                        for i in range(len(final)):
+                            print(final[i])
+                        if ld == 5:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" +final[0] + "\n" + final[1] + "\n" + final[2] + "\n" + final[3] + "\n" + final[4] + "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+
+                        if ld == 4:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" + final[0] + "\n" + final[1] + "\n" + final[2] + "\n" + final[3] + "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+
+                        if ld == 3:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" + final[0] + "\n" + final[1] + "\n" + final[2]+ "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+                        if ld == 2:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" + final[0] + "\n" + final[1]+ "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+
+                        if ld == 1:
+                            api.update_status('@' + your_name + " According to his " +str(reply_nbr) + " last comments the account commented or replied to :" + "\n" + "\n" + final[0]+ "\n" + str(nbr),mention.id)
+                            print("ok")
+                            time.sleep(wait_time2)
+                            nbr = nbr + 1
+                            write_id("nbr.txt",str(nbr))
+
+                except:
+                    time.sleep(wait_time)
+                    api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+                    print("Désolé je ne peux pas analyser ce compte")
+            
+            elif "@twittosbot analyze" in mention.full_text.lower() or "@twittosbot analyze that tweet" in mention.full_text.lower() or "@twittosbot analyze this tweet" in mention.full_text.lower() or "@twittosbot  analyze this tweet" in mention.full_text.lower() or "@twittosbot   analyze this tweet" in mention.full_text.lower() or "@twittosbot     analyze this tweet" in mention.full_text.lower() and bad_user == 0:
                 print("aaaaanalyse")
                 your_name = mention.user.screen_name
                 write_id("user_name.txt",your_name)
@@ -1279,7 +2402,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                                         tweets.append(tweet.id)
                                         if look_user == look_user:
                                             shadow = False
-
+                            
                                         #tweet_date.append(tweet.date)
                                     elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
                                         idx = idx + 1
@@ -1303,6 +2426,268 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     #print(str(n_tweet_date))
                     #print(len(tweets))
                     #print(tweets[0])
+                    if shadow == True:
+                        print("Shadooooooooooooooo")
+                    print("caca")
+                    if only_pic == 1:
+                        api.update_status('@' + your_name + " The tweet contains only photos or video I cannot analyze it",mention.id)
+                    else:
+                        if shadow == False:
+                            if len(tweets) == 0:
+                                never_done = 1
+                                url = f"https://twitter.com/user/status/"
+                                #tid = tweets[len(tweets)]
+                            else:
+                                url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                                tid = tweets[len(tweets) - 1]
+                            if len(tweet_split) == 1 or too_long == 1:
+                                print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
+                                #print(tid,copy_tweet.in_reply_to_status_id)
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet has been made " + str(idx) + " times but it's the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet has been made more than 1000 times but it's the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet has been made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                                    time.sleep(wait_time2)
+                            elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
+                                #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times but it's the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                                    time.sleep(wait_time2)
+                            elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
+                                if idx > 1 and idx <= 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " but it is the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) "  + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                elif idx > 999 and never_done == 0:
+                                    if copy_tweet.in_reply_to_status_id == tid:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                                    else:
+                                        api.update_status('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                                    time.sleep(wait_time2)
+                                else:
+                                    api.update_status('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+                                    time.sleep(wait_time2)
+                        else:
+                            api.update_status('@' + your_name + " The tweet has been made " + str(idx + 1) + " times but it is the original",mention.id)
+                            time.sleep(wait_time2)
+                            
+                except tweepy.TweepError as e:
+                    if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
+                        get_status = print_file("get_status.txt")
+                        copy_tweet = print_file("copy_tweet.txt")
+                        blocked_tweet = blocked_by_user_en(get_status,int(copy_tweet),v)
+                        print(str(blocked_tweet) + "   " + str(v.tweet_id ))
+                        api.update_status(blocked_tweet,v.tweet_id)
+                        time.sleep(wait_time2)
+                except IndexError:
+                        api.update_status('@' + your_name + " The tweet contains only photos or video or it is too long I cannot analyze it",mention.id)
+                        time.sleep(wait_time2)
+                except Exception as e:
+                    print(e)
+                    api.update_status('@' + your_name + " Sorry I can't analyze this tweet. ",mention.id)
+                    time.sleep(wait_time2)
+                    
+            elif "@twittosbot analyse" in mention.full_text.lower() or "@twittosbot analyse ça" in mention.full_text.lower() or "@twittosbot analyse se tweet" in mention.full_text.lower() or "@twittosbot analyse le tweet" in mention.full_text.lower() or "@twittosbot analyse ce tweet" in mention.full_text.lower() or "@twittosbot  analyse ce tweet" in mention.full_text.lower() or "@twittosbot   analyse ce tweet" in mention.full_text.lower() or "@twittosbot     analyse ce tweet" in mention.full_text.lower() and bad_user == 0:
+                print("aaaaanalyse")
+                your_name = mention.user.screen_name
+                write_id("user_name.txt",your_name)
+                idx = 0
+                only_pic = 0
+                last_seen_id = mention.id
+                status = api.get_status(mention.id)
+                write_id("id.txt",last_seen_id)
+                write_id("get_mention.txt",mention.id)
+                look_user = ""
+                shadow = True
+                try:
+                    copy_tweet = api.get_status((mention.id),tweet_mode = "extended")
+                    write_id("copy_tweet.txt",copy_tweet.in_reply_to_status_id)
+                    get_status = api.get_status(copy_tweet.in_reply_to_status_id)
+                    look_user = get_status.user.screen_name
+                    #n_tweet_date = status.created_at
+                    write_id("get_status.txt",get_status)
+                    tweets = []
+                    limits = 1000
+                    idx = 0
+                    never_done = 0
+                    original_tweet = get_status.text
+                    print("oooooriginl")
+                    print(original_tweet)
+                    image_inside = 0
+                    if "https://" in original_tweet and len(original_tweet) < 100:
+                        image_inside = 1
+                    tweet_split = get_status.text.split("https://")
+                    #print(get_status.text)
+                    #print(tweet_split)
+                    #print(tweet_split)
+                    #ccprint("cjczoicjoezjcozejcoiejc")
+                    az = tweet_split[0].replace("\n"," ")
+                    #print("caca")
+                    #print(az)
+                    #print("caca")
+                    word = ""
+                    rword = ""
+                    qquery = ""
+                    query  = ""
+                    max_time = 5000
+                    sssd = ""
+                    ssss = ""
+                    little_word = 0
+                    rtweet = ""
+                    rtweets = ""
+                    azz=""
+                    rjoin = ""
+                    too_long = 0
+                    tweets_date = []
+                    if az[0] == '@':
+                        print("aaazz")
+                        print(az)
+                        if len(az) > 100:
+                            azz = az.split(" ")
+                            rtweet = remove_word2(azz)
+                            rjoin = ' '.join(rtweet)
+                            rtweets = rjoin
+                            rtweets = rtweets.split(" ")
+
+                            print(rtweets)
+                            print("pppppppppppppp")
+                            #time.sleep(10000)
+                            too_long = 1
+                            rtweets.pop()
+                            rtweets.pop()
+                            rtweets.pop()
+
+                            print(rtweets)
+                            for i in range(len(rtweets)):
+                                if rtweets[i][0] != "@":
+                                    word = word + str(rtweets[i]) + " "
+                            for i in range(len(word)):
+                                rword = rword + word[i]
+                            query = "(" + remove_emoji(rword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ").replace("j'"," ")) + ")"
+                            ssss = rword
+                            print(query)
+                        else:
+                            ass = remove_word(tweet_split[0].split(" "))
+                            ssss = ' '.join(ass)
+                            query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ").replace("j'"," ")) + ")"
+                    elif len(get_status.text) > 100:
+                        rtweet = remove_word2(tweet_split)
+                        rtweets = rtweet[0].replace("\n"," ")
+                        rtweets = rtweets.split(" ")
+                        too_long = 1
+                        print(rtweets)
+                        print("pppppppppppppp")
+                        #time.sleep(10000)
+                        rtweets.pop()
+                        rtweets.pop()
+                        rtweets.pop()
+
+                        print(rtweets)
+                        for i in range(len(rtweets)):
+                            if len(rtweets[i]) > 0:
+                                if rtweets[i][0] != "@":
+                                    word = word + str(rtweets[i]) + " "
+                        for i in range(len(word)):
+                            rword = rword + word[i]
+                        query = "(" + remove_emoji(rword.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
+                        ssss = rword
+                        print(query)
+                    else:
+                        ass = remove_word(tweet_split[0].split(" "))
+                        print("asssssssssssssssss")
+                        print(ass)
+                        print(len(ass))
+                        print("asssssssssssssssss")
+                        if len(ass) > 3:
+                            little_word = 0
+                        else:
+                            little_word = 1
+                        ssss = ' '.join(ass)
+                        ssss = ssss.replace("\n"," ")
+                        print("ssd")
+                        print(sssd)
+                        query = "(" + remove_emoji(ssss.replace(":","").replace(":","").replace('"',"").replace("«","").replace("»","").replace("-"," ").replace(".","").replace(","," ").replace("j'"," ")) + ")"
+                        qquery = "(" + tweet_split[0] + ")"
+                        print("qqqqqqqqqqqq")
+                        print(query)
+                    #print(tweet_split[0])
+                    #print("qqqqqq")
+                    #print(qquery)
+                    #print("qqqqqq")
+                    #print(query)
+                    #print("qqqqq")
+                    #print(query)
+                    #print(len(tweets))
+                    if len(tweet_split) == 2 and tweet_split[0] == '':
+                        only_pic = 1
+                    else:
+                        for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+                            max_time = max_time - 1
+                            #print(tweet.content)
+                            #print(tweet.content)
+                            print(max_time)
+                            if len(tweets) == limits or max_time < 0:
+                                break
+                            else:
+                                bss = remove_word2(tweet.content.split(" "))
+                                bsss = ' '.join(bss)
+
+                                if image_inside == 0:
+                                    if ssss.lower() in bsss.lower() and little_word == 1 and check_similarity(ssss,bsss,60) == 1:
+                                        #print(remove_word(tweet.content.split(" ")))
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
+                            
+                                        #tweet_date.append(tweet.date)
+                                    elif little_word == 0 and check_similarity(ssss,bsss,60) == 1:
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
+                                        #tweet_date.append(tweet.date)
+                                else:
+                                    dss = remove_word(tweet.content.split(" "))
+                                    dsss = ' '.join(dss)
+                                    if "https://t.co/" in dsss and check_similarity(ssss,dsss,60) == 1:
+                                        idx = idx + 1
+                                        tweets.append(tweet.id)
+                                        if look_user == look_user:
+                                            shadow = False
+
+                    #print("original tweet")
+                    #print(str(tweet_date[len(tweet_date) - 1]))
+                    #print("-------")
+                    #print("search tweet")
+                    #print(str(n_tweet_date))
+                    #print(len(tweets))
+                    #print(tweets[0])
+                    print("herre")
                     if shadow == True:
                         print("Shadooooooooooooooo")
                     print("caca")
@@ -1371,14 +2756,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         else:
                             api.update_status('@' + your_name + " Le tweet a été fait " + str(idx + 1) + " fois mais c'est l'originel",mention.id)
                             time.sleep(wait_time2)
-
+                            
                 except tweepy.TweepError as e:
                     if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
                         get_status = print_file("get_status.txt")
                         copy_tweet = print_file("copy_tweet.txt")
-                        blocked_tweet, tweet_id = blocked_by_user(get_status,int(copy_tweet))
-                        print(str(blocked_tweet) + "   " + str(tweet_id))
-                        api.update_status(blocked_tweet,tweet_id)
+                        blocked_tweet = blocked_by_user(get_status,int(copy_tweet),v)
+                        print(str(blocked_tweet) + "   " + str(v.tweet_id ))
+                        api.update_status(blocked_tweet,v.tweet_id)
                         time.sleep(wait_time2)
                 except IndexError:
                         api.update_status('@' + your_name + " Le tweet contient que des photos ou vidéo ou il est trop long je ne peux pas l'analyser",mention.id)
@@ -1387,6 +2772,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print(e)
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
+            
 
             elif "copie" in mention.full_text.lower() and text_with_no_az[0] == "copie" and bad_user == 0:
                 print("coooopy")
@@ -1397,6 +2783,8 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                 status = api.get_status(mention.id)
                 write_id("id.txt",last_seen_id)
                 max_time = 5000
+                url = ""
+                bigword = ""
                 try:
                     word = ""
                     rword = ""
@@ -1443,11 +2831,132 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         else:
                             api.update_status('@' + your_name + " Le tweet a été fait 0 fois",mention.id)
                             time.sleep(wait_time2)
-                except:
+                except Exception as e:
+                    print(e)
                     print("Désolé je ne peux pas analyser ce tweet.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
 
+            elif "copy" in mention.full_text.lower() and text_with_no_az[0] == "copy" and bad_user == 0:
+                print("coooopy")
+                your_name = mention.user.screen_name
+                idx = 0
+                only_pic = 0
+                last_seen_id = mention.id
+                status = api.get_status(mention.id)
+                write_id("id.txt",last_seen_id)
+                max_time = 5000
+                try:
+                    word = ""
+                    rword = ""
+                    for i in range(l):
+                        if text[i][0] != "@" and text[i] != "copy":
+                            word = word + text[i] + " "
+                    for i in range(len(word) - 1):
+                        rword = rword + word[i]
+                    print(rword,len(rword))
+                    rword_len = rword.split(" ")
+                    tweets = []
+                    limits = 1000
+                    idx = 0
+                    query = "(" + rword.replace(":","").replace('"',"").replace("«","").replace("»","") + ")"
+                    for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+                        max_time = max_time - 1
+                        #print(len(tweets))
+                        #print(tweet.content,rword)
+                        if len(tweets) == limits or max_time < 0:
+                            break
+                        else:
+                            if rword.lower() in tweet.content.lower() and rword_len == 1:
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                            else:
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                    if len(tweets) == 0:
+                        print("ok")
+                        #url = f"https://twitter.com/user/status/{tweets[len(tweets)]}"
+                        #tid = tweets[len(tweets)]
+                    else:
+                        url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                        tid = tweets[len(tweets) - 1]
+                    if len(rword) > 0:
+                        print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                        #print(tid,copy_tweet.in_reply_to_status_id)
+                        if idx > 1 and idx <= 999:
+                            api.update_status('@' + your_name + " The tweet has been made " + str(idx) + " times here is the original tweet (oldest)" + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        elif idx > 999:
+                            api.update_status('@' + your_name + " The tweet has been made more than 1000 times here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        else:
+                            api.update_status('@' + your_name + " The tweet has been made 0 times",mention.id)
+                            time.sleep(wait_time2)
+                except:
+                    print("jjjjj")
+                    print("Désolé je ne peux pas analyser ce tweet.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this tweet. ",mention.id)
+                    time.sleep(wait_time2)
+            elif "copyc" in mention.full_text.lower() and text_with_no_az[0] == "copyc" and bad_user == 0:
+                print("coooopy")
+                your_name = mention.user.screen_name
+                idx = 0
+                only_pic = 0
+                last_seen_id = mention.id
+                status = api.get_status(mention.id)
+                write_id("id.txt",last_seen_id)
+                max_time = 5000
+                try:
+                    word = ""
+                    rword = ""
+                    for i in range(l):
+                        if text[i][0] != "@" and text[i] != "copyc":
+                            word = word + text[i] + " "
+                    for i in range(len(word) - 1):
+                        rword = rword + word[i]
+                    print(rword,len(rword))
+                    rword_len = rword.split(" ")
+                    tweets = []
+                    limits = 1000
+                    idx = 0
+                    query = "(" + rword.replace(":","").replace('"',"").replace("«","").replace("»","") + ")"
+                    for tweet in sntwitter.TwitterSearchScraper(query).get_items():
+                        max_time = max_time - 1
+                        #print(len(tweets))
+                        #print(tweet.content,rword)
+                        if len(tweets) == limits or max_time < 0:
+                            break
+                        else:
+                            if rword.lower() in tweet.content.lower() and rword_len == 1 and "https://t.co/" in tweet.content.lower():
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                            elif "https://t.co/" in tweet.content.lower():
+                                idx = idx + 1
+                                tweets.append(tweet.id)
+                    if len(tweets) == 0:
+                        print("ok")
+                        #url = f"https://twitter.com/user/status/{tweets[len(tweets)]}"
+                        #tid = tweets[len(tweets)]
+                    else:
+                        url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
+                        tid = tweets[len(tweets) - 1]
+                    if len(rword) > 0:
+                        print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                        #print(tid,copy_tweet.in_reply_to_status_id)
+                        if idx > 1 and idx <= 999:
+                            api.update_status('@' + your_name + " The tweet has been made " + str(idx) + " times here is the original tweet (oldest)" + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        elif idx > 999:
+                            api.update_status('@' + your_name + " The tweet has been made more than 1000 times here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+                            time.sleep(wait_time2)
+                        else:
+                            api.update_status('@' + your_name + " The tweet has been made 0 times",mention.id)
+                            time.sleep(wait_time2)
+                except:
+                    print("Désolé je ne peux pas analyser ce tweet.")
+                    api.update_status('@' + your_name + " Sorry I can't analyze this tweet. ",mention.id)
+                    time.sleep(wait_time2)
+            
             elif "copic" in mention.full_text.lower() and text_with_no_az[0] == "copic" and bad_user == 0:
                 print("coooopy")
                 your_name = mention.user.screen_name
@@ -1507,6 +3016,185 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                     print("Désolé je ne peux pas analyser ce tweet.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
+            
+            elif "frequency" in mention.full_text.lower() and text_with_no_az[0] == "frequency" and bad_user == 0:
+                status = api.get_status(mention.id)
+                last_seen_id = mention.id
+                write_id("id.txt",last_seen_id)
+                your_name = mention.user.screen_name
+                try:
+                    word = ""
+                    rword = ""
+                    for i in range(l):
+                        if text[i][0] != "@" and text[i] != "frequency":
+                            word = word + text[i] + " "
+                    for i in range(len(word) - 1):
+                        rword = rword + word[i]
+                    print(rword)
+                    #print(rword)
+                    tweets = []
+                    text = rword
+                    tweets_date = []
+                    query = "(" + rword + ")"
+                    idx = 0
+                    s = 0
+                    limit = 999
+                    month_name = ["January","February","March","April","May","June","July","August","September","October","November","Décember"]
+                    max_time = 0
+                    for i,tweet in enumerate(sntwitter.TwitterSearchScraper(query).get_items()):
+                        if s>limit or max_time > 2500:
+                            break
+                        sss = remove_trash(tweet.content.lower().split(" "))
+                        ssss = ' '.join(sss)
+                        if text in ssss:
+                            #print(tweet.content.lower())
+                            s = s + 1
+                            url = f"https://twitter.com/user/status/{tweet.id}"
+                            tweets.append(url)
+                            tweets_date.append(tweet.date)
+                        max_time = max_time + 1
+
+                    if len(tweets) > 0:
+                        now = datetime.datetime.now()
+                        today = datetime.date.today()
+                        today_date = now.strftime("%Y-%m-%d")
+                        hour = now.strftime("%H:%M:%S")
+                        td = today_date.split("-", 3)
+                        tweet_date_split = tweets_date[len(tweets_date) - 1] + timedelta(hours=1)
+                        tweet_date = str(tweets_date[len(tweets_date) - 1] + timedelta(hours=1))
+                        print(str(tweets_date[len(tweets_date) - 1] + timedelta(hours=1)))
+                        print("aaaaaaaaaaaaaaaaaa")
+                        tweet_date = tweet_date.split(" ")
+                        tweet_hour = tweet_date[1]
+                        tweet_hour = tweet_hour[0:8]
+                        tweet_date_split = re.split('-| ',str(tweet_date_split))
+                        d0 = dta(int(tweet_date_split[0]), int(tweet_date_split[1]), int(tweet_date_split[2]))
+                        d1 = dta(int(td[0]), int(td[1]), int(td[2]))
+                        print(d0)
+                        delta = d1 - d0
+                        month = ""
+                        year = ""
+                        day = ""
+                        hour = hour.split(':')
+                        tweet_hour = tweet_hour.split(":")
+                        convert_sec = int(hour[0]) * 3600 + int(hour[1]) * 60 + int(hour[2])
+                        convert_sec_tweet = int(tweet_hour[0]) * 3600 + int(tweet_hour[1]) * 60 + int(tweet_hour[2])
+                        if int(delta.days) > 0:
+                            res_sec = int(delta.days) * 86400 + int(convert_sec_tweet)
+                        else:
+                            res_sec = 86400
+                        final_res = int(convert_sec)
+                        final_tweet_res = int(convert_sec_tweet) + int(delta.days) * 86400
+                        if len(tweets) > 0:
+                            print(tweets[len(tweets) - 1])
+                        if int(delta.days) > 0 and s > 0:
+
+                            resdecade = s/(res_sec/(60*60*24*7*30*365*3650))
+                            resyear = s/(res_sec/(60*60*24*7*30*365))
+                            resmonth = s/(res_sec/(60*60*24*7*30))
+                            resweek = s/(res_sec/(60*60*24*7))
+                            resday = s/(res_sec/(60*60*24))
+                            reshour = s/(res_sec/(60*60))
+                            resmin = s/(res_sec/60)
+                            ressec = s/(res_sec)
+                            if ressec >= 1:
+                                print("After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(ressec)) + " tweet par seconde voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of" + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(ressec,0)) + " tweet per second this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+                            elif resmin >= 1:
+                                print("After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resmin)) + " tweet par minute voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resmin,0)) + " tweet per minute this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif reshour >= 1:
+                                print("After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(reshour)) + " tweet par heure voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(reshour,0)) + " tweet per hour this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resday >= 1:
+                                print("After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resday)) + " tweet par jour voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resday,0)) + " tweet per hour this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resweek >= 1:
+                                print("After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resweek)) + " tweet par semaine voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resweek,0)) + " tweet per week this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resmonth >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resmonth)) + " tweet par mois voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resmonth,0)) + " tweet per month this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resyear >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resyear)) + " tweet par an voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resyear,0)) + " tweet per year this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resdecade >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resdecade)) + " tweet par décenie voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resdecade,0)) + " tweet per decade this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                        elif s > 0:
+                            if int(convert_sec) > int(convert_sec_tweet):
+                                res_sec = int(convert_sec) - int(convert_sec_tweet)
+                            else:
+                                res_sec = int(convert_sec_tweet) - int(convert_sec)
+                            resdecade = s/(res_sec/(60*60*24*7*30*365*3650))
+                            resyear = s/(res_sec/(60*60*24*7*30*365))
+                            resmonth = s/(res_sec/(60*60*24*7*30))
+                            resweek = s/(res_sec/(60*60*24*7))
+                            resday = s/(res_sec/(60*60*24))
+                            reshour = s/(res_sec/(60*60))
+                            resmin = s/(res_sec/60)
+                            ressec = s/(res_sec)
+                            if ressec >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(ressec)) + " tweet par seconde voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(ressec,0)) + " tweet per second this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resmin >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resmin)) + " tweet par minute voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resmin,0)) + " tweet per minute this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif reshour >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(reshour)) + " tweet par heure voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(reshour,0)) + " tweet per hour this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+                            elif resday >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resday)) + " tweet par jour voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resday,0)) + " tweet per day this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resweek >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resweek)) + " tweet par semaine voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resweek,0)) + " tweet per week this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resmonth >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resmonth)) + " tweet par mois voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resmonth,0)) + " tweet per month this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                            elif resyear >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resyear)) + " tweet par an voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resyear,0)) + " tweet per year this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+                            elif resdecade >= 1:
+                                print("After the analysis of " + str(s) + " derniers tweets le tweet le plus ancien a été fait le " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " ce qui fait environ " + str(int(resdecade)) + " tweet par décenie voici le tweet le plus ancien contenant le mot/phrase " + str(tweets[len(tweets_date) - 1] ))
+                                api.update_status('@' + your_name + " After the analysis of " + str(s) + " latest tweets the oldest tweet was made on " + tweet_date_split[2] + " " + month_name[int(tweet_date_split[1]) - 1] + " " + tweet_date_split[0] + " which is approximately " + str(round(resdecade,0)) + " tweet per decade this is the oldest tweet containing the word/phrase " + str(tweets[len(tweets_date) - 1] ),mention.id)
+                                time.sleep(20)
+
+                    else:
+                        print("le mot/phrase n'as jamais été tweet")
+                        api.update_status('@' + your_name + " The word/sentence was never tweeted",mention.id)
+                        time.sleep(wait_time)
+                except:
+                    time.sleep(wait_time)
+                    api.update_status('@' + your_name + " Sorry I can't analyze this word/sentence. " ,mention.id)
+                    print("Désolé je ne peux pas analyser ce mot/phrase réesseaies dans 5 minutes ça marchera peut-être")
 
             elif "freq" in mention.full_text.lower() and text_with_no_az[0] == "freq" and bad_user == 0:
                 status = api.get_status(mention.id)
@@ -1551,9 +3239,9 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         today_date = now.strftime("%Y-%m-%d")
                         hour = now.strftime("%H:%M:%S")
                         td = today_date.split("-", 3)
-                        tweet_date_split = tweets_date[len(tweets_date) - 1] + timedelta(hours=2)
-                        tweet_date = str(tweets_date[len(tweets_date) - 1] + timedelta(hours=2))
-                        print(str(tweets_date[len(tweets_date) - 1] + timedelta(hours=2)))
+                        tweet_date_split = tweets_date[len(tweets_date) - 1] + timedelta(hours=1)
+                        tweet_date = str(tweets_date[len(tweets_date) - 1] + timedelta(hours=1))
+                        print(str(tweets_date[len(tweets_date) - 1] + timedelta(hours=1)))
                         print("aaaaaaaaaaaaaaaaaa")
                         tweet_date = tweet_date.split(" ")
                         tweet_hour = tweet_date[1]
@@ -1824,24 +3512,158 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET):
                         if statuses_count >= 3000:
                             time.sleep(wait_time)
                             api.update_status('@' + your_name + " " + "Désolé mais l'utilisateur n'a pas tweeté ce mot sur ses 3000 derniers tweets.",mention.id)
+            elif launc_search == 1 and text[text.index("search") - 1][0] == "@" and bad_user == 0:
+                #cherche_split = mention.full_text.lower().split("cherche")
+                #print(cherche_split)
+
+                if len(text) > 3 and check_text(text) >= 2 and check_baz(text) > 0:
+                    word = ""
+                    rword = ""
+                    for i in range(l):
+                        if text[i][0] != "@" and text[i] != "search":
+                            word = word + text[i] + " "
+                    for i in range(len(word) - 1):
+                        rword = rword + word[i]
+                    last_seen_id = mention.id
+
+                    write_id("id.txt",last_seen_id)
+                    write_id("username.txt",text[len(text) - 3 - count_space(rword)])
+                    write_id("word.txt",rword)
+                    write_id("mention.txt",str(mention.id))
+                    write_id("your_name.txt",mention.user.screen_name)
+                    username = print_file("username.txt")
+                    word_to_find = print_file("word.txt")
+                    m = print_file("mention.txt")
+                    your_name = print_file("your_name.txt")
+                    try:
+                        tweets = api.user_timeline(screen_name=username,
+                                                count=200,
+                                                include_rts = False,
+                                                tweet_mode = 'extended'
+                                                )
+                    except:
+                        time.sleep(wait_time)
+                        #api.update_status('@' + your_name + " " + "Désolé mais le compte est privé ou suspendu.",mention.id)
+                        api.update_status('@' + your_name + " Sorry I can't analyze this account. " + str(nbr),mention.id)
+                        print("private account :(")
+                        bot_laucnher(0,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET)
+
+                    all_tweets = []
+                    all_tweets.extend(tweets)
+                    try:
+                        oldest_id = tweets[-1].id
+
+                        while True:
+                            tweets = api.user_timeline(screen_name=username,
+                                                count=200,
+                                                include_rts = False,
+                                                max_id = oldest_id - 1,
+                                                tweet_mode = 'extended'
+                                                )
+                            if len(tweets) == 0:
+                                break
+                            oldest_id = tweets[-1].id
+                            all_tweets.extend(tweets)
+                    except:
+                        print("error")
+                        time.sleep(wait_time)
+                    twt = []
+                    nbr = 0
+                    p = "%"
+                    all_nbr = []
+
+                    word = word_to_find
+                    word = word.lower()
+                    back_word = word
+                    word = word.split(" ")
+                    user = api.get_user(username)
+                    statuses_count = user.statuses_count
+                    if len(all_tweets) == 0:
+                        time.sleep(wait_time)
+                    for i in range(len(all_tweets)):
+                        w = all_tweets[i].full_text.lower()
+                        t = re.split('\!|\,|\;|\"|\?|\.|\*|\(|\)|\#| ',w)
+                        w = w.lower()
+                        td = all_tweets[i].full_text.lower().split(" ")
+                        tr = remove_word(td)
+                        set2 = set(tr)
+                        set1 = set(w)
+                        is_subset = set2.issubset(set1)
+                        if len(word) > 1:
+                            if back_word in all_tweets[i].full_text.lower() and i < 3001:
+                                nbr = nbr + 1
+                                all_nbr.append(i)
+                        else:
+                            if back_word in tr and i < 3001:
+                                nbr = nbr + 1
+                                all_nbr.append(i)
+                    print(all_nbr)
+                    if nbr > 0:
+                        res = float(nbr/statuses_count) * 100
+                        res = round(res,2)
+                        res2 = float(nbr/3000) * 100
+                        res2 = round(res2,2)
+                    else:
+                        res = 0
+                        res2 = 0
+
+                    if nbr > 0:
+                        url = f"https://twitter.com/user/status/{all_tweets[all_nbr[0]].id}"
+                        if statuses_count < 3000:
+                            if check_text(text) <= 2:
+                                time.sleep(wait_time)
+                                api.update_status('@' + your_name + " the account tweeted " + str(nbr) + " times the search word out of a total of " + str(statuses_count) + " tweets which is approximately " + str(res) + " " + p + " of his tweets.\n"+"here is the most recent tweet containing this word " + url, mention.id)
+                                #api.update_status('@' + your_name + " le compte a tweeté " + str(nbr) + " fois le mot " + back_word + " sur un total de " + str(statuses_count) + " tweets ce qui représente environ " + str(res) + " " + p + " de ses tweets.", mention.id)
+                        
+                            else:
+                                time.sleep(wait_time)
+                                api.update_status('@' + your_name + " the account tweeted " + str(nbr) + " times the search word out of a total of " + str(statuses_count) + "tweets which is approximately " + str(res) + " " + p + " of his tweets.\n"+"here is the most recent tweet containing this word " + url, mention.id)
+                                #api.update_status('@' + your_name + " le compte voici le tweet le plus ancien contenant ce mot " + url, mention.id)
+                                time.sleep(wait_time)
+
+                        else:
+                            if check_text(text) <= 2:
+                                time.sleep(wait_time)
+                                api.update_status('@' + your_name + " the account tweeted " + str(nbr) + " times the word searched on his last 3000 tweets which represents approximately " + str(res2) + " " + p + " of his tweets.\n"+"here is the most recent tweet containing this word " + url, mention.id)
+                                #api.update_status('@' + your_name + " le compte a tweeté " + str(nbr) + " fois le mot " + back_word + " sur ses 3000 derniers tweets ce qui représente environ " + str(res2) + " " + p + " de ses tweets.", mention.id)
+                        
+                            else:
+                                time.sleep(wait_time)
+                                api.update_status('@' + your_name + " the account tweeted " + str(nbr) + " times the word searched on his last 3000 tweets which represents approximately " + str(res2) + " " + p + " of his tweets.\n"+"here is the most recent tweet containing this word " + url, mention.id)
+                                #api.update_status('@' + your_name + " le compte voici le tweet le plus ancien contenant ce mot " + url, mention.id)
+                        
+                    else:
+                        if statuses_count < 3000:
+                            time.sleep(wait_time)
+                            api.update_status('@' + your_name + " " + "Sorry but the user has never tweeted this word.",mention.id)
+
+                        if statuses_count >= 3000:
+                            time.sleep(wait_time)
+                            api.update_status('@' + your_name + " " + "Sorry but the user never has never tweeted this word on his last 3000 tweets.",mention.id)
 
                 else:
                     print("nothing to sort")
     except Exception as e:
+        last_seen_id = mention.id
+        write_id("id.txt",last_seen_id)            
         print(e)
-        time.sleep(40)
+        api.update_status('@' + your_name + " " + "Twitter Error",mention.id)
+
+        time.sleep(1)
 
 print("start")
 print(remove_emoji("salut a tous les amis "))
 key = 0
+v = var()
 while True:
     print("Waitging!!!",key)
     time.sleep(15)
     try:
-        bot_laucnher(0,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET)
-    except:
-        print("No wifi")
-        time.sleep(120)
+        bot_laucnher(0,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v)
+    except Exception as e:
+        print(e)
+        print("coco")
+        time.sleep(30)
     time.sleep(5)
     key = key + 1
     #exit(0)
