@@ -16,6 +16,7 @@ import sys
 import re
 import snscrape.modules.twitter
 import snscrape.modules.twitter as sntwitter
+import traceback
 
 import emoji
 
@@ -2784,6 +2785,12 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 write_id("id.txt",last_seen_id)
                 max_time = 5000
                 url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
                 bigword = ""
                 try:
                     word = ""
@@ -2791,8 +2798,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                     for i in range(l):
                         if text[i][0] != "@" and text[i] != "copie":
                             word = word + text[i] + " "
+                    if len(t) > 125:
+                        print("pipipipi")
                     for i in range(len(word) - 1):
                         rword = rword + word[i]
+                    r = rword
+                    if len(rword) > 120:
+                        rword = shortstring(r)
+                    print("cacacaca")
                     print(rword,len(rword))
                     rword_len = rword.split(" ")
                     tweets = []
@@ -2832,7 +2845,7 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                             api.update_status('@' + your_name + " Le tweet a été fait 0 fois",mention.id)
                             time.sleep(wait_time2)
                 except Exception as e:
-                    print(e)
+                    traceback.print_exc()
                     print("Désolé je ne peux pas analyser ce tweet.")
                     api.update_status('@' + your_name + " Désolé je ne peux pas analyser ce tweet. ",mention.id)
                     time.sleep(wait_time2)
@@ -2846,6 +2859,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 status = api.get_status(mention.id)
                 write_id("id.txt",last_seen_id)
                 max_time = 5000
+                url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
+                
                 try:
                     word = ""
                     rword = ""
@@ -2906,6 +2927,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 status = api.get_status(mention.id)
                 write_id("id.txt",last_seen_id)
                 max_time = 5000
+                url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
+                
                 try:
                     word = ""
                     rword = ""
@@ -2966,6 +2995,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 status = api.get_status(mention.id)
                 write_id("id.txt",last_seen_id)
                 max_time = 5000
+                url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
+                
                 try:
                     word = ""
                     rword = ""
@@ -3022,6 +3059,14 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 last_seen_id = mention.id
                 write_id("id.txt",last_seen_id)
                 your_name = mention.user.screen_name
+                url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
+                
                 try:
                     word = ""
                     rword = ""
@@ -3201,6 +3246,13 @@ def bot_laucnher(test,API_KEY,API_SECRET,ACCESS_TOKEN,ACCESS_TOKEN_SECRET,v):
                 last_seen_id = mention.id
                 write_id("id.txt",last_seen_id)
                 your_name = mention.user.screen_name
+                url = ""
+                t = ' '.join(remove_word(text))
+                if len(t) > 130:
+                    text = shortstring(t)
+                    print("wow")
+                    l = len(text)
+                print(l)
                 try:
                     word = ""
                     rword = ""
