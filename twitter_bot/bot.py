@@ -266,7 +266,6 @@ def get_len_word(l):
 
 
 def blocked_by_user_en(get_status,copy_tweet,v):
-    
     since_id = 1
     auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
     auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
@@ -427,11 +426,15 @@ def blocked_by_user_en(get_status,copy_tweet,v):
                             tweets.append(tweet.id)
                             if look_user == look_user:
                                 shadow = False
+                            
+
+
         #print(len(tweets))
         #print(tweets[0])
         print("caca")
         if only_pic == 1:
-            return('@' + your_name + " The tweet contains only photos or video I cannot analyze it",mention.id)
+            v.tweet_id = mention_id
+            return('@' + your_name + " The tweet contains only photos or video I cannot analyze it")
         else:
             if shadow == False:
                 if len(tweets) == 0:
@@ -442,72 +445,108 @@ def blocked_by_user_en(get_status,copy_tweet,v):
                     url = f"https://twitter.com/user/status/{tweets[len(tweets) - 1]}"
                     tid = tweets[len(tweets) - 1]
                 if len(tweet_split) == 1 or too_long == 1:
-                    print("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien des 1000 derniers) " + str(url))
+                    print("The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url))
                     #print(tid,copy_tweet.in_reply_to_status_id)
                     if idx > 1 and idx <= 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet has been made " + str(idx) + " times but it's the original",mention.id)
+                        if copy_tweet == tid:
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " The tweet has been made " + str(idx) + " times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest)  " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet has been made more than 1000 times but it's the original",mention.id)
+                        if copy_tweet == tid:
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " The tweet has been made more than 1000 times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet has been made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + " The tweet has been made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        api.update_status('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " The tweet has been made 0 fois il est donc originel ")
                         time.sleep(wait_time2)
                 elif len(tweet_split) > 1 and tweet_split[0][0] != '@':
-                    #("Le tweet a été fait " + str(idx) + " fois le tweet est donc copié voici le tweet originel (le plus ancien) " + str(url))
+                    #("The tweet has been made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest)  " + str(url))
                     if idx > 1 and idx <= 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times but it's the original",mention.id)
+                        if copy_tweet == tid:
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest)  " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                        if copy_tweet == tid:
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made more than 1000 times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        return('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " The tweet has been made 0 fois il est donc originel ")
                         time.sleep(wait_time2)
                 elif len(tweet_split) == 2 and "t.co" in tweet_split[1]:
                     if idx > 1 and idx <= 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " but it is the original",mention.id)
+                        if copy_tweet == tid:
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made " + str(idx) + " times the tweet is copied here is the original tweet (the oldest)  " + str(url))
                         time.sleep(wait_time2)
                     elif idx > 999 and never_done == 0:
-                        if copy_tweet.in_reply_to_status_id == tid:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been done more than 1000 times but it is the original",mention.id)
+                        if copy_tweet == tid:
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made more than 1000 times but it is the original")
                         else:
-                            return('@' + your_name + " The tweet contains a video or a photo (the result is less precise) and it has been made more than 1000 times the tweet is therefore copied here is the original tweet (the oldest of the last 1000) " + str(url),mention.id)
+
+                            v.tweet_id = mention_id
+                            return('@' + your_name + "The tweet contains a video or a photo (the result is less precise) and it was made more than 1000 times the tweet is copied here is the original tweet (the oldest of the last 1000) " + str(url))
                         time.sleep(wait_time2)
                     else:
-                        return('@' + your_name + " The tweet has been made 0 times so it is original ",mention.id)
+
+                        v.tweet_id = mention_id
+                        return('@' + your_name + " The tweet has been made 0 fois il est donc originel ")
                         time.sleep(wait_time2)
             else:
-                return('@' + your_name + " The tweet has been made " + str(idx + 1) + " times but it is the original",mention.id)
+
+                v.tweet_id = mention_id
+                return('@' + your_name + " The tweet has been made " + str(idx + 1) + " times but it is the original")
                 time.sleep(wait_time2)
+                    
     except tweepy.TweepError as e:
         if str(e) == "[{'code': 136, 'message': 'You have been blocked from the author of this tweet.'}]":
-            time.sleep(wait_time2)
-            return('@' + your_name + " Sorry I can't analyze this tweet the user blocked me. ")
             
-    except IndexError:
+            v.tweet_id = mention_id
+            return('@' + your_name + " Sorry I can't analyze this tweet the user blocked me. ")
             time.sleep(wait_time2)
-            return('@' + your_name + " The tweet contains only photos or video or it is too long I cannot analyze it",mention.id)
-    except Exception as e:
-        print(e)
-        time.sleep(wait_time2)
-        return('@' + your_name + " Sorry I can't analyze this tweet. ",mention.id)
+    except IndexError:
+            
+            v.tweet_id = mention_id
+            return('@' + your_name + " The tweet contains only photos or video or it is too long I cannot analyze it")
+            time.sleep(wait_time2)
+    except:
         
+        v.tweet_id = mention_id
+        print("Désolé je ne peux pas analyser ce tweet.")
+        return('@' + your_name + " Sorry I can't analyze this tweet. ")
+        time.sleep(wait_time2)    
 
 
 def blocked_by_user(get_status,copy_tweet,v):
