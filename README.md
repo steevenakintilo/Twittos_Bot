@@ -1,12 +1,14 @@
-TwittosBot est un bot twitter qui permet de faire pleins de choses:
+TwittosBot is a twitter bot that can do all sorts of things:
 
-Le bot peut savoir si un tweet est copié. Calculer combien de fois un utilisateur tweet par jour en moyenne. 
-Le nombre de tweet qu'un utilisateur a fait aujourd'hui. 
-Le nombre de tweet qu'un utilisateur a fait hier. 
-Le nombre de fois qu'un utilisateur a dit un certain mot/phrase et bien d'autres choses.
+The bot can tell if a tweet is being copied. Calculate how many times a user tweets per day on average. 
+The number of tweets a user has made today. 
+The number of tweets a user made yesterday. 
+The number of times a user has said a certain word/phrase and many other things.
 
-Le bot a été coder en python avec l'utilisation de l'api de twitter et d'autre modules python.
+The bot has been coded in python using the twitter api and other python modules.
 
-Il est host sur un raspberry pi 3b+ chez moi.
+It was hosted on a raspberry pi 3b+ at home sadly twitter api don't work anymore thanks to elon musk :(
 
-Le lien du bot: https://twitter.com/twittosbot
+The bot link: https://twitter.com/twittosbot
+
+Translated with www.DeepL.com/Translator (free version)
