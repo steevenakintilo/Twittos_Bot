@@ -11,6 +11,4 @@ It was hosted on a raspberry pi 3b+ at home sadly twitter api don't work anymore
 
 The bot link: https://twitter.com/twittosbot
 
-Translated with www.DeepL.com/Translator (free version)
-
 Since Elon Musk made Twitter/X api € a month the bot isn't working anymore
